@@ -1,0 +1,260 @@
+{
+  "source_note": "Seeded from Extern's Summer 2027 PM guide and pointed at official company search/career pages.",
+  "sources": [
+    {
+      "id": "google",
+      "name": "Google",
+      "career_url": "https://www.google.com/about/careers/applications/programs/apm/",
+      "urls": [
+        "https://www.google.com/about/careers/applications/jobs/results/?q=product%20manager%20intern",
+        "https://www.google.com/about/careers/applications/jobs/results/?q=associate%20product%20manager",
+        "https://www.google.com/about/careers/applications/jobs/results/?q=product%20marketing%20intern"
+      ]
+    },
+    {
+      "id": "meta",
+      "name": "Meta",
+      "career_url": "https://www.metacareers.com/careerprograms/students",
+      "render": true,
+      "urls": [
+        "https://www.metacareers.com/jobsearch/?q=product+manager+intern",
+        "https://www.metacareers.com/jobsearch/?q=rotational+product+manager",
+        "https://www.metacareers.com/jobsearch/?q=product+marketing+intern"
+      ]
+    },
+    {
+      "id": "amazon",
+      "name": "Amazon",
+      "career_url": "https://www.amazon.jobs/teams/internships-for-students",
+      "urls": [
+        "https://www.amazon.jobs/en/search.json?base_query=product%20manager%20intern&loc_query=&offset=0&result_limit=100",
+        "https://www.amazon.jobs/en/search.json?base_query=product%20marketing%20intern&loc_query=&offset=0&result_limit=100",
+        "https://www.amazon.jobs/en/search.json?base_query=associate%20product%20manager&loc_query=&offset=0&result_limit=100"
+      ]
+    },
+    {
+      "id": "microsoft",
+      "name": "Microsoft",
+      "career_url": "https://careers.microsoft.com/students/",
+      "urls": [
+        "https://apply.careers.microsoft.com/careers?query=product%20manager%20intern&start=0",
+        "https://apply.careers.microsoft.com/careers?query=product%20marketing%20intern&start=0",
+        "https://apply.careers.microsoft.com/careers?query=associate%20product%20manager&start=0"
+      ]
+    },
+    {
+      "id": "apple",
+      "name": "Apple",
+      "career_url": "https://jobs.apple.com/en-us/search?team=internships-STDNT-INTRN",
+      "urls": [
+        "https://jobs.apple.com/en-us/search?search=product%20manager%20intern&sort=relevance",
+        "https://jobs.apple.com/en-us/search?search=product%20marketing%20intern&sort=relevance"
+      ]
+    },
+    {
+      "id": "stripe",
+      "name": "Stripe",
+      "career_url": "https://stripe.com/jobs/university",
+      "urls": [
+        "https://stripe.com/jobs/search?query=product%20manager%20intern",
+        "https://stripe.com/jobs/search?query=product%20marketing%20intern"
+      ]
+    },
+    {
+      "id": "uber",
+      "name": "Uber",
+      "career_url": "https://www.uber.com/us/en/careers/apm/",
+      "urls": [
+        "https://www.uber.com/us/en/careers/list/?query=product%20manager%20intern",
+        "https://www.uber.com/us/en/careers/list/?query=associate%20product%20manager"
+      ]
+    },
+    {
+      "id": "airbnb",
+      "name": "Airbnb",
+      "career_url": "https://careers.airbnb.com/internship-programs/",
+      "urls": [
+        "https://careers.airbnb.com/positions/?query=product%20manager%20intern",
+        "https://careers.airbnb.com/positions/?query=product%20marketing%20intern"
+      ]
+    },
+    {
+      "id": "palantir",
+      "name": "Palantir",
+      "career_url": "https://www.palantir.com/careers/",
+      "urls": [
+        "https://www.palantir.com/careers/"
+      ]
+    },
+    {
+      "id": "tiktok",
+      "name": "TikTok",
+      "career_url": "https://lifeattiktok.com/",
+      "urls": [
+        "https://lifeattiktok.com/search?keyword=product%20manager%20intern",
+        "https://lifeattiktok.com/search?keyword=product%20marketing%20intern"
+      ]
+    },
+    {
+      "id": "databricks",
+      "name": "Databricks",
+      "career_url": "https://www.databricks.com/company/careers/university-recruiting",
+      "urls": [
+        "https://www.databricks.com/company/careers/open-positions?department=product"
+      ]
+    },
+    {
+      "id": "salesforce",
+      "name": "Salesforce",
+      "career_url": "https://careers.salesforce.com/en/university/",
+      "urls": [
+        "https://careers.salesforce.com/en/jobs/?search=product%20manager%20intern",
+        "https://careers.salesforce.com/en/jobs/?search=product%20marketing%20intern"
+      ]
+    },
+    {
+      "id": "adobe",
+      "name": "Adobe",
+      "career_url": "https://www.adobe.com/careers.html",
+      "urls": [
+        "https://careers.adobe.com/us/en/search-results?keywords=product%20manager%20intern",
+        "https://careers.adobe.com/us/en/search-results?keywords=product%20marketing%20intern"
+      ]
+    },
+    {
+      "id": "oracle",
+      "name": "Oracle",
+      "career_url": "https://www.oracle.com/careers/students-grads/",
+      "urls": [
+        "https://careers.oracle.com/en/sites/jobsearch/jobs?keyword=product%20manager%20intern",
+        "https://careers.oracle.com/en/sites/jobsearch/jobs?keyword=product%20marketing%20intern"
+      ]
+    },
+    {
+      "id": "servicenow",
+      "name": "ServiceNow",
+      "career_url": "https://www.servicenow.com/careers.html",
+      "url_template": "https://jobs.smartrecruiters.com/ServiceNow/{id}",
+      "urls": [
+        "https://api.smartrecruiters.com/v1/companies/ServiceNow/postings?limit=100&offset=0",
+        "https://api.smartrecruiters.com/v1/companies/ServiceNow/postings?limit=100&offset=100",
+        "https://api.smartrecruiters.com/v1/companies/ServiceNow/postings?limit=100&offset=200"
+      ]
+    },
+    {
+      "id": "intuit",
+      "name": "Intuit",
+      "career_url": "https://www.intuit.com/careers/",
+      "urls": [
+        "https://jobs.intuit.com/search-jobs/product%20manager%20intern/27595/1",
+        "https://jobs.intuit.com/search-jobs/product%20marketing%20intern/27595/1"
+      ]
+    },
+    {
+      "id": "hubspot",
+      "name": "HubSpot",
+      "career_url": "https://www.hubspot.com/careers",
+      "urls": [
+        "https://www.hubspot.com/careers/jobs?search=product%20manager%20intern",
+        "https://www.hubspot.com/careers/jobs?search=product%20marketing%20intern"
+      ]
+    },
+    {
+      "id": "spotify",
+      "name": "Spotify",
+      "career_url": "https://www.lifeatspotify.com/",
+      "urls": [
+        "https://www.lifeatspotify.com/jobs?search=product%20manager%20intern",
+        "https://www.lifeatspotify.com/jobs?search=product%20marketing%20intern"
+      ]
+    },
+    {
+      "id": "netflix",
+      "name": "Netflix",
+      "career_url": "https://jobs.netflix.com/",
+      "urls": [
+        "https://explore.jobs.netflix.net/careers?query=product%20manager%20intern&start=0",
+        "https://explore.jobs.netflix.net/careers?query=product%20marketing%20intern&start=0"
+      ]
+    },
+    {
+      "id": "nike",
+      "name": "Nike",
+      "career_url": "https://jobs.nike.com/",
+      "urls": [
+        "https://careers.nike.com/jobs?keywords=product%20manager%20intern",
+        "https://careers.nike.com/jobs?keywords=product%20marketing%20intern"
+      ]
+    },
+    {
+      "id": "disney",
+      "name": "Disney",
+      "career_url": "https://jobs.disneycareers.com/",
+      "urls": [
+        "https://jobs.disneycareers.com/search-jobs/product%20manager%20intern/391-28648/1",
+        "https://jobs.disneycareers.com/search-jobs/product%20marketing%20intern/391-28648/1"
+      ]
+    },
+    {
+      "id": "walmart",
+      "name": "Walmart",
+      "career_url": "https://careers.walmart.com/",
+      "urls": [
+        "https://careers.walmart.com/results?q=product%20manager%20intern",
+        "https://careers.walmart.com/results?q=product%20marketing%20intern"
+      ]
+    },
+    {
+      "id": "capital-one",
+      "name": "Capital One",
+      "career_url": "https://www.capitalonecareers.com/internship-programs",
+      "urls": [
+        "https://www.capitalonecareers.com/search-jobs/product%20manager%20intern/1732/1",
+        "https://www.capitalonecareers.com/search-jobs/product%20marketing%20intern/1732/1"
+      ]
+    },
+    {
+      "id": "block",
+      "name": "Block / Square",
+      "career_url": "https://block.xyz/careers",
+      "urls": [
+        "https://block.xyz/careers/jobs?query=product%20manager%20intern",
+        "https://block.xyz/careers/jobs?query=product%20marketing%20intern"
+      ]
+    },
+    {
+      "id": "robinhood",
+      "name": "Robinhood",
+      "career_url": "https://earlytalent.robinhood.com/",
+      "urls": [
+        "https://api.greenhouse.io/v1/boards/robinhood/jobs?content=true"
+      ]
+    },
+    {
+      "id": "bloomberg",
+      "name": "Bloomberg",
+      "career_url": "https://www.bloomberg.com/careers/",
+      "urls": [
+        "https://bloomberg.avature.net/careers/SearchJobs/?q=product%20manager%20intern",
+        "https://bloomberg.avature.net/careers/SearchJobs/?q=product%20marketing%20intern"
+      ]
+    },
+    {
+      "id": "yc-startups",
+      "name": "Y Combinator Startups",
+      "career_url": "https://www.workatastartup.com/",
+      "urls": [
+        "https://www.workatastartup.com/jobs?query=product%20manager%20intern"
+      ]
+    },
+    {
+      "id": "wellfound",
+      "name": "Wellfound Startups",
+      "career_url": "https://wellfound.com/",
+      "enabled": false,
+      "urls": [
+        "https://wellfound.com/role/product-manager-intern"
+      ]
+    }
+  ]
+}

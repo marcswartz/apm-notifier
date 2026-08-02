@@ -1,0 +1,14 @@
+services:
+  notifier:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      STATE_PATH: /data/notifier.sqlite3
+      SOURCES_PATH: /app/config/sources.json
+    volumes:
+      - notifier-state:/data
+
+volumes:
+  notifier-state:

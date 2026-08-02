@@ -1,0 +1,68 @@
+name: APM Notifier
+
+on:
+  schedule:
+    # Offset from the top of the hour to reduce GitHub scheduler congestion.
+    - cron: "2-59/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: apm-notifier
+  cancel-in-progress: false
+
+jobs:
+  check-career-pages:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      STATE_PATH: ${{ github.workspace }}/data/notifier.sqlite3
+      SOURCES_PATH: ${{ github.workspace }}/config/sources.json
+      CHECK_INTERVAL_SECONDS: "300"
+      REQUEST_TIMEOUT_SECONDS: "25"
+      REQUEST_CONCURRENCY: "8"
+      TARGET_YEAR: "2027"
+      EXCLUDED_YEARS: "2020,2021,2022,2023,2024,2025,2026"
+      ALLOWED_COUNTRIES: "US,CA,UK"
+      # A lost or first-time cache establishes a quiet baseline instead of
+      # sending every role that is already live.
+      ALERT_ON_FIRST_RUN: "false"
+
+    steps:
+      - name: Check out notifier
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Restore notification history
+        id: restore-state
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: data
+          key: apm-notifier-state-${{ github.run_id }}
+          restore-keys: |
+            apm-notifier-state-
+
+      - name: Validate cloud configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${TELEGRAM_BOT_TOKEN}" || -z "${TELEGRAM_CHAT_ID}" ]]; then
+            echo "Required Telegram secrets are not configured."
+            exit 1
+          fi
+          mkdir -p data
+          python3 --version
+          google-chrome --version
+
+      - name: Check career pages and deliver new alerts
+        run: python3 -m apm_notifier run --once
+
+      - name: Save notification history
+        if: always()
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: data
+          key: apm-notifier-state-${{ github.run_id }}
