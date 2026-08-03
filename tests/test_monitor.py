@@ -3,7 +3,7 @@ import tempfile
 import unittest
 
 from apm_notifier.filtering import RoleFilter
-from apm_notifier.models import FetchResult, Source
+from apm_notifier.models import FetchResult, Source, SourceResult
 from apm_notifier.monitor import Monitor
 from apm_notifier.notify import NotificationOutcome
 from apm_notifier.state import StateStore
@@ -12,7 +12,7 @@ from apm_notifier.state import StateStore
 class FakeClient:
     timeout_seconds = 5
 
-    def fetch(self, url, extra_headers=None):
+    def fetch(self, url, extra_headers=None, method="GET", body=""):
         return FetchResult(
             requested_url=url,
             final_url=url,
@@ -36,6 +36,16 @@ class FakeNotifier:
 
 
 class MonitorTests(unittest.TestCase):
+    def test_partial_source_fetch_is_not_healthy(self) -> None:
+        source = Source(
+            id="example",
+            name="Example",
+            urls=("https://jobs.example.com/one", "https://jobs.example.com/two"),
+            career_url="https://jobs.example.com/",
+        )
+        result = SourceResult(source=source, jobs=(), fetched_urls=1, errors=("second failed",))
+        self.assertFalse(result.succeeded)
+
     def test_delivers_each_job_only_once(self) -> None:
         source = Source(
             id="example",

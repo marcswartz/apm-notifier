@@ -1,7 +1,7 @@
 import json
 import unittest
 
-from apm_notifier.extract import extract_jobs
+from apm_notifier.extract import extract_jobs, response_has_job_signal
 from apm_notifier.filtering import RoleFilter
 from apm_notifier.models import Source
 
@@ -175,6 +175,96 @@ class ExtractJobsTests(unittest.TestCase):
         jobs = extract_jobs(html, "text/html", self.source, "https://jobs.example.com", self.filter)
         self.assertEqual(len(jobs), 1)
         self.assertEqual(jobs[0].url, "https://jobs.example.com/jobs/ph-1")
+
+    def test_extracts_lever_location_from_categories(self) -> None:
+        payload = [
+            {
+                "text": "Product Marketing Intern — Summer 2027",
+                "hostedUrl": "https://jobs.lever.co/example/pm-1",
+                "categories": {"team": "Marketing", "location": "London, UK"},
+            }
+        ]
+        jobs = extract_jobs(
+            json.dumps(payload),
+            "application/json",
+            self.source,
+            "https://api.lever.co/v0/postings/example",
+            self.filter,
+        )
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(jobs[0].location, "London, UK")
+
+    def test_extracts_workday_job_with_public_url_template(self) -> None:
+        source = Source(
+            id="salesforce",
+            name="Salesforce",
+            urls=("https://example.wd/jobs",),
+            career_url="https://example.com/careers",
+            url_template="https://example.wd/Careers/{path}",
+        )
+        payload = {
+            "jobPostings": [
+                {
+                    "title": "Associate Product Manager (starting summer 2027)",
+                    "externalPath": "/job/San-Francisco/APM_123",
+                    "locationsText": "California - San Francisco",
+                }
+            ]
+        }
+        jobs = extract_jobs(
+            json.dumps(payload),
+            "application/json",
+            source,
+            "https://example.wd/jobs",
+            self.filter,
+        )
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(jobs[0].url, "https://example.wd/Careers/job/San-Francisco/APM_123")
+
+    def test_extracts_company_from_community_markdown_table(self) -> None:
+        markdown = """
+        | Company | Role | Location | Apply | Added |
+        | --- | --- | --- | --- | --- |
+        | Databricks | Product Management Intern (Summer 2027) | San Francisco, CA | [apply](https://example.com/db) | 2026-07-16 |
+        | Salesforce | Associate Product Manager Intern 🔒 | San Francisco, CA | [apply](https://example.com/sf) | - |
+        | Other | Software Engineer Intern | Seattle, WA | [apply](https://example.com/swe) | - |
+        """
+        jobs = extract_jobs(markdown, "text/plain", self.source, self.source.career_url, self.filter)
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(jobs[0].company, "Databricks")
+        self.assertEqual(jobs[0].url, "https://example.com/db")
+
+    def test_job_signal_rejects_empty_spa_shell(self) -> None:
+        self.assertFalse(response_has_job_signal("<html><a href='/careers'>Careers</a></html>", "text/html"))
+        self.assertTrue(
+            response_has_job_signal(
+                "<html><a href='/jobs/123'>Product Manager Intern</a></html>",
+                "text/html",
+            )
+        )
+        self.assertTrue(response_has_job_signal('{"jobs": []}', "application/json"))
+
+    def test_extracts_rendered_yc_product_card(self) -> None:
+        html = """
+        <div class="flex cursor-pointer flex-col">
+          <div><img class="logo" alt="Dedalus Labs"></div>
+          <div><a href="/jobs/98000" target="job">Product Manager Summer 2027 Intern</a></div>
+          <div><p class="job-details">
+            <span>Intern</span><span>San Francisco, CA, US</span><span>$4K monthly</span>
+          </p></div>
+        </div>
+        """
+        jobs = extract_jobs(
+            html,
+            "text/html",
+            self.source,
+            "https://www.workatastartup.com/jobs/l/product-manager",
+            self.filter,
+        )
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(jobs[0].company, "Dedalus Labs")
+        self.assertEqual(jobs[0].location, "San Francisco, CA, US")
+        self.assertEqual(jobs[0].url, "https://www.workatastartup.com/jobs/98000")
 
 
 if __name__ == "__main__":

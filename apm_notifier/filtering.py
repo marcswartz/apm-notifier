@@ -16,6 +16,10 @@ PRODUCT_ROLE = re.compile(
     re.IGNORECASE,
 )
 INTERNSHIP = re.compile(r"\b(?:intern(?:ship)?|co[ -]?op)\b", re.IGNORECASE)
+PRODUCT_DEVELOPMENT_PROGRAM = re.compile(
+    r"\bproduct\s+development\s+internship\s+program\b",
+    re.IGNORECASE,
+)
 NEGATIVE_SENIORITY = re.compile(
     r"\b(?:senior|sr\.?|staff|principal|director|head|vice president|vp)\b",
     re.IGNORECASE,
@@ -169,6 +173,12 @@ def _term_pattern(terms: tuple[str, ...]) -> re.Pattern[str]:
 
 
 LOCATION_PATTERNS = {country: _term_pattern(terms) for country, terms in LOCATION_TERMS.items()}
+US_STATE_ABBREVIATION = re.compile(
+    r",\s*(?:AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|"
+    r"MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY)"
+    r"(?![A-Za-z])",
+    re.IGNORECASE,
+)
 
 
 class RoleFilter:
@@ -198,7 +208,8 @@ class RoleFilter:
 
         early_career = bool(EXPLICIT_EARLY_CAREER.search(candidate))
         internship = bool(INTERNSHIP.search(candidate) and PRODUCT_ROLE.search(candidate))
-        if not early_career and not internship:
+        product_development_program = bool(PRODUCT_DEVELOPMENT_PROGRAM.search(candidate))
+        if not early_career and not internship and not product_development_program:
             return False
 
         if NEGATIVE_SENIORITY.search(candidate) and not INTERNSHIP.search(candidate):
@@ -211,6 +222,8 @@ class RoleFilter:
         title_candidate = normalize_space(title)
         searchable = " | ".join(value for value in (location_candidate, title_candidate) if value)
         for country in self.allowed_countries:
+            if country == "US" and US_STATE_ABBREVIATION.search(location_candidate):
+                return True
             if LOCATION_PATTERNS[country].search(searchable):
                 return True
             for code in COUNTRY_CODES[country]:

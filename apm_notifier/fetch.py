@@ -58,13 +58,20 @@ class HttpClient:
         self.attempts = attempts
         self.ssl_context = trusted_ssl_context()
 
-    def fetch(self, url: str, extra_headers: dict[str, str] | None = None) -> FetchResult:
+    def fetch(
+        self,
+        url: str,
+        extra_headers: dict[str, str] | None = None,
+        method: str = "GET",
+        body: str = "",
+    ) -> FetchResult:
         headers = dict(DEFAULT_HEADERS)
         headers.update(extra_headers or {})
+        encoded_body = body.encode("utf-8") if body else None
         last_error: Exception | None = None
         for attempt in range(self.attempts):
             try:
-                request = Request(url, headers=headers, method="GET")
+                request = Request(url, data=encoded_body, headers=headers, method=method)
                 with urlopen(request, timeout=self.timeout_seconds, context=self.ssl_context) as response:
                     body = response.read()
                     content_type = response.headers.get("Content-Type", "")
@@ -88,7 +95,7 @@ class HttpClient:
                 last_error = error
                 if "CERTIFICATE_VERIFY_FAILED" in str(error) and shutil.which("curl"):
                     try:
-                        return self._fetch_with_curl(url, headers)
+                        return self._fetch_with_curl(url, headers, method, body)
                     except FetchError as curl_error:
                         last_error = curl_error
                 if attempt + 1 < self.attempts:
@@ -96,7 +103,24 @@ class HttpClient:
         detail = str(last_error) if last_error else "unknown fetch error"
         raise FetchError(f"{url}: {detail}") from last_error
 
-    def _fetch_with_curl(self, url: str, headers: dict[str, str]) -> FetchResult:
+    def url_exists(self, url: str) -> bool:
+        """Reject confirmed dead links while treating transient verification failures as live."""
+        request = Request(url, headers=DEFAULT_HEADERS, method="HEAD")
+        try:
+            with urlopen(request, timeout=self.timeout_seconds, context=self.ssl_context) as response:
+                return response.status < 400
+        except HTTPError as error:
+            return error.code not in {404, 410}
+        except (TimeoutError, URLError, OSError):
+            return True
+
+    def _fetch_with_curl(
+        self,
+        url: str,
+        headers: dict[str, str],
+        method: str,
+        body: str,
+    ) -> FetchResult:
         """Use curl's native trust store when a framework Python lacks an intermediate CA."""
         marker = "\n__APM_NOTIFIER_CURL_METADATA__"
         command = [
@@ -111,6 +135,10 @@ class HttpClient:
         ]
         for key, value in headers.items():
             command.extend(("--header", f"{key}: {value}"))
+        if method != "GET":
+            command.extend(("--request", method))
+        if body:
+            command.extend(("--data-binary", body))
         command.extend(("--write-out", f"{marker}%{{url_effective}}\t%{{content_type}}", url))
         try:
             completed = subprocess.run(

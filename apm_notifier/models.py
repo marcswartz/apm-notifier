@@ -52,6 +52,9 @@ class Source:
     headers: dict[str, str] = field(default_factory=dict)
     url_template: str = ""
     render: bool = False
+    request_method: str = "GET"
+    request_bodies: tuple[str, ...] = ()
+    verify_job_links: bool = False
 
 
 @dataclass(frozen=True)
@@ -92,4 +95,4 @@ class SourceResult:
 
     @property
     def succeeded(self) -> bool:
-        return self.fetched_urls > 0
+        return self.fetched_urls == len(self.source.urls) and not self.errors

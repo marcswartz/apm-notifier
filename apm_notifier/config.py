@@ -141,6 +141,16 @@ def load_sources(path: Path) -> tuple[Source, ...]:
         urls = tuple(str(url).strip() for url in item.get("urls", []) if str(url).strip())
         if not urls:
             raise ValueError(f"Source {source_id} has no URLs")
+        request_method = str(item.get("request_method", "GET")).strip().upper()
+        if request_method not in {"GET", "POST"}:
+            raise ValueError(f"Source {source_id} has unsupported request_method {request_method}")
+        raw_bodies = item.get("request_bodies", [])
+        request_bodies = tuple(
+            value if isinstance(value, str) else json.dumps(value, separators=(",", ":"))
+            for value in raw_bodies
+        )
+        if request_bodies and len(request_bodies) != len(urls):
+            raise ValueError(f"Source {source_id} must have one request body per URL")
         sources.append(
             Source(
                 id=source_id,
@@ -151,6 +161,9 @@ def load_sources(path: Path) -> tuple[Source, ...]:
                 headers={str(key): str(value) for key, value in item.get("headers", {}).items()},
                 url_template=str(item.get("url_template", "")).strip(),
                 render=bool(item.get("render", False)),
+                request_method=request_method,
+                request_bodies=request_bodies,
+                verify_job_links=bool(item.get("verify_job_links", False)),
             )
         )
     return tuple(source for source in sources if source.enabled)

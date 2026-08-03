@@ -16,6 +16,7 @@ class RoleFilterTests(unittest.TestCase):
             "Technical Product Manager Co-op",
             "Product Marketing Intern",
             "Product Marketing Manager Internship — Summer 2027",
+            "Product Development Internship Program (Summer 2027)",
         )
         for title in accepted:
             with self.subTest(title=title):
@@ -41,6 +42,7 @@ class RoleFilterTests(unittest.TestCase):
             "London, England, United Kingdom",
             "Remote - USA",
             "Vancouver, BC / Singapore",
+            "McLean, VA / Plano, TX",
         )
         for location in accepted:
             with self.subTest(location=location):

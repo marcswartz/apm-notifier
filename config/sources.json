@@ -5,6 +5,7 @@
       "id": "google",
       "name": "Google",
       "career_url": "https://www.google.com/about/careers/applications/programs/apm/",
+      "render": true,
       "urls": [
         "https://www.google.com/about/careers/applications/jobs/results/?q=product%20manager%20intern",
         "https://www.google.com/about/careers/applications/jobs/results/?q=associate%20product%20manager",
@@ -45,6 +46,7 @@
       "id": "apple",
       "name": "Apple",
       "career_url": "https://jobs.apple.com/en-us/search?team=internships-STDNT-INTRN",
+      "render": true,
       "urls": [
         "https://jobs.apple.com/en-us/search?search=product%20manager%20intern&sort=relevance",
         "https://jobs.apple.com/en-us/search?search=product%20marketing%20intern&sort=relevance"
@@ -55,8 +57,7 @@
       "name": "Stripe",
       "career_url": "https://stripe.com/jobs/university",
       "urls": [
-        "https://stripe.com/jobs/search?query=product%20manager%20intern",
-        "https://stripe.com/jobs/search?query=product%20marketing%20intern"
+        "https://api.greenhouse.io/v1/boards/stripe/jobs"
       ]
     },
     {
@@ -73,8 +74,7 @@
       "name": "Airbnb",
       "career_url": "https://careers.airbnb.com/internship-programs/",
       "urls": [
-        "https://careers.airbnb.com/positions/?query=product%20manager%20intern",
-        "https://careers.airbnb.com/positions/?query=product%20marketing%20intern"
+        "https://api.greenhouse.io/v1/boards/airbnb/jobs"
       ]
     },
     {
@@ -82,13 +82,15 @@
       "name": "Palantir",
       "career_url": "https://www.palantir.com/careers/",
       "urls": [
-        "https://www.palantir.com/careers/"
+        "https://api.lever.co/v0/postings/palantir?mode=json&team=Product%20Development",
+        "https://api.lever.co/v0/postings/palantir?mode=json&team=Communications"
       ]
     },
     {
       "id": "tiktok",
       "name": "TikTok",
       "career_url": "https://lifeattiktok.com/",
+      "render": true,
       "urls": [
         "https://lifeattiktok.com/search?keyword=product%20manager%20intern",
         "https://lifeattiktok.com/search?keyword=product%20marketing%20intern"
@@ -99,16 +101,42 @@
       "name": "Databricks",
       "career_url": "https://www.databricks.com/company/careers/university-recruiting",
       "urls": [
-        "https://www.databricks.com/company/careers/open-positions?department=product"
+        "https://api.greenhouse.io/v1/boards/databricks/jobs"
       ]
     },
     {
       "id": "salesforce",
       "name": "Salesforce",
       "career_url": "https://careers.salesforce.com/en/university/",
+      "request_method": "POST",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "url_template": "https://salesforce.wd12.myworkdayjobs.com/External_Career_Site/{path}",
       "urls": [
-        "https://careers.salesforce.com/en/jobs/?search=product%20manager%20intern",
-        "https://careers.salesforce.com/en/jobs/?search=product%20marketing%20intern"
+        "https://salesforce.wd12.myworkdayjobs.com/wday/cxs/salesforce/External_Career_Site/jobs",
+        "https://salesforce.wd12.myworkdayjobs.com/wday/cxs/salesforce/External_Career_Site/jobs",
+        "https://salesforce.wd12.myworkdayjobs.com/wday/cxs/salesforce/External_Career_Site/jobs"
+      ],
+      "request_bodies": [
+        {
+          "appliedFacets": {},
+          "limit": 20,
+          "offset": 0,
+          "searchText": "product manager intern"
+        },
+        {
+          "appliedFacets": {},
+          "limit": 20,
+          "offset": 0,
+          "searchText": "product marketing intern"
+        },
+        {
+          "appliedFacets": {},
+          "limit": 20,
+          "offset": 0,
+          "searchText": "associate product manager"
+        }
       ]
     },
     {
@@ -124,9 +152,11 @@
       "id": "oracle",
       "name": "Oracle",
       "career_url": "https://www.oracle.com/careers/students-grads/",
+      "url_template": "https://careers.oracle.com/en/sites/jobsearch/job/{id}",
       "urls": [
-        "https://careers.oracle.com/en/sites/jobsearch/jobs?keyword=product%20manager%20intern",
-        "https://careers.oracle.com/en/sites/jobsearch/jobs?keyword=product%20marketing%20intern"
+        "https://eeho.fa.us2.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.workLocation,requisitionList.secondaryLocations&finder=findReqs;siteNumber=CX_45001,limit=25,offset=0,keyword=product%20manager%20intern",
+        "https://eeho.fa.us2.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.workLocation,requisitionList.secondaryLocations&finder=findReqs;siteNumber=CX_45001,limit=25,offset=0,keyword=product%20marketing%20intern",
+        "https://eeho.fa.us2.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.workLocation,requisitionList.secondaryLocations&finder=findReqs;siteNumber=CX_45001,limit=25,offset=0,keyword=associate%20product%20manager"
       ]
     },
     {
@@ -154,8 +184,7 @@
       "name": "HubSpot",
       "career_url": "https://www.hubspot.com/careers",
       "urls": [
-        "https://www.hubspot.com/careers/jobs?search=product%20manager%20intern",
-        "https://www.hubspot.com/careers/jobs?search=product%20marketing%20intern"
+        "https://api.greenhouse.io/v1/boards/hubspotjobs/jobs"
       ]
     },
     {
@@ -163,8 +192,7 @@
       "name": "Spotify",
       "career_url": "https://www.lifeatspotify.com/",
       "urls": [
-        "https://www.lifeatspotify.com/jobs?search=product%20manager%20intern",
-        "https://www.lifeatspotify.com/jobs?search=product%20marketing%20intern"
+        "https://api.lever.co/v0/postings/spotify?mode=json"
       ]
     },
     {
@@ -217,8 +245,7 @@
       "name": "Block / Square",
       "career_url": "https://block.xyz/careers",
       "urls": [
-        "https://block.xyz/careers/jobs?query=product%20manager%20intern",
-        "https://block.xyz/careers/jobs?query=product%20marketing%20intern"
+        "https://api.greenhouse.io/v1/boards/block/jobs"
       ]
     },
     {
@@ -226,7 +253,7 @@
       "name": "Robinhood",
       "career_url": "https://earlytalent.robinhood.com/",
       "urls": [
-        "https://api.greenhouse.io/v1/boards/robinhood/jobs?content=true"
+        "https://api.greenhouse.io/v1/boards/robinhood/jobs"
       ]
     },
     {
@@ -242,8 +269,18 @@
       "id": "yc-startups",
       "name": "Y Combinator Startups",
       "career_url": "https://www.workatastartup.com/",
+      "render": true,
       "urls": [
-        "https://www.workatastartup.com/jobs?query=product%20manager%20intern"
+        "https://www.workatastartup.com/jobs/l/product-manager"
+      ]
+    },
+    {
+      "id": "summer-2027-community-backcheck",
+      "name": "Summer 2027 Community Back-check",
+      "career_url": "https://github.com/sndsh404/summer-2027-internships",
+      "verify_job_links": true,
+      "urls": [
+        "https://raw.githubusercontent.com/sndsh404/summer-2027-internships/main/README.md"
       ]
     },
     {

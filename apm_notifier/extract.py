@@ -11,7 +11,17 @@ from .filtering import RoleFilter
 from .models import Job, Source, normalize_space
 
 
-TITLE_KEYS = ("title", "jobTitle", "job_title", "postingTitle", "posting_title", "posting_name", "name", "text")
+TITLE_KEYS = (
+    "title",
+    "Title",
+    "jobTitle",
+    "job_title",
+    "postingTitle",
+    "posting_title",
+    "posting_name",
+    "name",
+    "text",
+)
 URL_KEYS = (
     "canonicalPositionUrl",
     "positionUrl",
@@ -27,7 +37,16 @@ URL_KEYS = (
     "external_path",
     "ref",
 )
-LOCATION_KEYS = ("location", "jobLocation", "job_location", "locations", "city")
+LOCATION_KEYS = (
+    "location",
+    "jobLocation",
+    "job_location",
+    "locations",
+    "locationsText",
+    "city",
+    "categories",
+    "PrimaryLocation",
+)
 MICROSOFT_RENDERED_JOB = re.compile(
     r"^(?P<title>.+?)\s+(?P<location>(?:United States|Canada|United Kingdom),.+?)"
     r"\s+Posted\s+.+$",
@@ -140,11 +159,12 @@ def _jobs_from_json(
         title = _first_string(item, TITLE_KEYS)
         if not role_filter.matches(title):
             continue
-        identifier = _first_string(item, ("id", "jobId", "job_id", "requisitionId"))
-        if source.url_template and identifier:
-            url = source.url_template.format(id=identifier)
+        identifier = _first_string(item, ("id", "Id", "jobId", "job_id", "requisitionId"))
+        raw_url = _first_string(item, URL_KEYS)
+        if source.url_template and (identifier or raw_url):
+            url = source.url_template.format(id=identifier, path=raw_url.lstrip("/"))
         else:
-            url = _first_string(item, URL_KEYS)
+            url = raw_url
         if not url:
             url = f"{source.career_url}#{identifier}" if identifier else source.career_url
         location = ""
@@ -165,6 +185,194 @@ def _jobs_from_json(
             )
         )
     return jobs
+
+
+MARKDOWN_LINK = re.compile(r"\[[^]]+\]\((?P<url>https?://[^)]+)\)")
+
+
+def _plain_markdown(value: str) -> str:
+    value = re.sub(r"<[^>]+>", " ", value)
+    value = re.sub(r"\[([^]]+)\]\([^)]+\)", r"\1", value)
+    return normalize_space(value.replace("**", "").replace("`", ""))
+
+
+def _jobs_from_markdown(text: str, source: Source, role_filter: RoleFilter) -> list[Job]:
+    """Read the standard Company | Role | Location | Apply internship table."""
+    jobs: list[Job] = []
+    for line in text.splitlines():
+        if not line.lstrip().startswith("|"):
+            continue
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) < 4:
+            continue
+        company, title, location, apply_cell = cells[:4]
+        if company.casefold() in {"company", "---"} or set(company) <= {"-", ":", " "}:
+            continue
+        if "🔒" in title or "closed" in title.casefold():
+            continue
+        link = MARKDOWN_LINK.search(apply_cell)
+        clean_company = _plain_markdown(company)
+        clean_title = _plain_markdown(title)
+        clean_location = _plain_markdown(location)
+        if not link or not role_filter.matches(clean_title):
+            continue
+        if not role_filter.matches_location(clean_location, clean_title):
+            continue
+        jobs.append(
+            Job(
+                source_id=source.id,
+                company=clean_company,
+                title=clean_title,
+                url=link.group("url"),
+                location=clean_location,
+            )
+        )
+    return jobs
+
+
+JOB_COLLECTION_KEYS = frozenset(
+    {"jobs", "positions", "postings", "results", "jobPostings", "requisitionList", "content"}
+)
+ZERO_RESULT_MARKERS = (
+    "no jobs found",
+    "no matching jobs",
+    "no open positions",
+    "no results found",
+    "we couldn't find any",
+    "we could not find any",
+    "0 jobs",
+    "0 results",
+)
+JOB_DETAIL_HREF = re.compile(
+    r"/(?:careers/)?(?:job|jobs|details|positions|jobdetail)/(?:results/)?[^/?#\"']+",
+    re.IGNORECASE,
+)
+NUMERIC_SEARCH_HREF = re.compile(r"/search/\d{6,}", re.IGNORECASE)
+
+
+def response_has_job_signal(text: str, content_type: str) -> bool:
+    """Reject blank application shells that would otherwise look like successful fetches."""
+    stripped = text.lstrip()
+    is_json = "json" in content_type.casefold() or stripped[:1] in {"{", "["}
+    if is_json:
+        try:
+            payload = json.loads(stripped)
+        except json.JSONDecodeError:
+            return False
+        if isinstance(payload, list):
+            return not payload or any(isinstance(item, dict) for item in payload)
+        return any(key in item for item in _walk_json(payload) for key in JOB_COLLECTION_KEYS)
+
+    lowered = text.casefold()
+    if any(marker in lowered for marker in ZERO_RESULT_MARKERS):
+        return True
+    if "| company | role | location |" in lowered:
+        return True
+    parser = CareerHTMLParser()
+    parser.feed(text)
+    for script in (*parser.json_scripts, *parser.json_code_blocks):
+        try:
+            payload = json.loads(script)
+        except json.JSONDecodeError:
+            continue
+        if any(key in item for item in _walk_json(payload) for key in JOB_COLLECTION_KEYS):
+            return True
+    phenom_state = _json_object_after(text, "phApp.ddo =")
+    if phenom_state is not None and any(
+        key in item for item in _walk_json(phenom_state) for key in JOB_COLLECTION_KEYS
+    ):
+        return True
+    return any(
+        JOB_DETAIL_HREF.search(href) or NUMERIC_SEARCH_HREF.search(href)
+        for href, _ in parser.anchors
+    )
+
+
+class YCJobCardParser(HTMLParser):
+    """Extract company, title, and location from rendered Work at a Startup cards."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.cards: list[tuple[str, str, str, str]] = []
+        self._depth = 0
+        self._company = ""
+        self._href = ""
+        self._title_parts: list[str] = []
+        self._span_parts: list[str] = []
+        self._current_span: list[str] | None = None
+        self._in_job_anchor = False
+        self._in_details = False
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        attributes = {key.casefold(): value or "" for key, value in attrs}
+        classes = attributes.get("class", "")
+        if not self._depth and tag.casefold() == "div" and "cursor-pointer" in classes:
+            self._depth = 1
+            self._company = ""
+            self._href = ""
+            self._title_parts = []
+            self._span_parts = []
+            return
+        if not self._depth:
+            return
+        if tag.casefold() == "div":
+            self._depth += 1
+        elif tag.casefold() == "img" and "logo" in classes:
+            self._company = normalize_space(attributes.get("alt"))
+        elif tag.casefold() == "a" and attributes.get("target") == "job":
+            self._href = attributes.get("href", "")
+            self._in_job_anchor = True
+        elif tag.casefold() == "p" and "job-details" in classes:
+            self._in_details = True
+        elif tag.casefold() == "span" and self._in_details:
+            self._current_span = []
+
+    def handle_data(self, data: str) -> None:
+        if self._in_job_anchor:
+            self._title_parts.append(data)
+        if self._current_span is not None:
+            self._current_span.append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        if not self._depth:
+            return
+        if tag.casefold() == "a" and self._in_job_anchor:
+            self._in_job_anchor = False
+        elif tag.casefold() == "span" and self._current_span is not None:
+            value = normalize_space(" ".join(self._current_span))
+            if value:
+                self._span_parts.append(value)
+            self._current_span = None
+        elif tag.casefold() == "p" and self._in_details:
+            self._in_details = False
+        elif tag.casefold() == "div":
+            self._depth -= 1
+            if self._depth == 0 and self._company and self._href and self._title_parts:
+                location = self._span_parts[1] if len(self._span_parts) > 1 else ""
+                self.cards.append(
+                    (self._company, normalize_space(" ".join(self._title_parts)), location, self._href)
+                )
+
+
+def _jobs_from_yc_cards(
+    text: str,
+    source: Source,
+    base_url: str,
+    role_filter: RoleFilter,
+) -> list[Job]:
+    parser = YCJobCardParser()
+    parser.feed(text)
+    return [
+        Job(
+            source_id=source.id,
+            company=company,
+            title=title,
+            url=urljoin(base_url, href),
+            location=location,
+        )
+        for company, title, location, href in parser.cards
+        if role_filter.matches(title) and role_filter.matches_location(location, title)
+    ]
 
 
 def _json_object_after(text: str, marker: str) -> Any | None:
@@ -218,6 +426,9 @@ def extract_jobs(
         except json.JSONDecodeError:
             pass
     else:
+        jobs.extend(_jobs_from_markdown(text, source, role_filter))
+        if "workatastartup.com" in base_url:
+            jobs.extend(_jobs_from_yc_cards(text, source, base_url, role_filter))
         parser = CareerHTMLParser()
         parser.feed(text)
         for href, label in parser.anchors:

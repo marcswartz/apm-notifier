@@ -7,7 +7,7 @@ APM Notifier watches official company career searches and sends a one-time phone
 - Technical or Growth Product Manager internship
 - Product Marketing or Product Marketing Manager internship
 
-The configuration contains 28 sources from the [Extern Summer 2027 PM guide](https://www.extern.com/post/product-management-internships-summer-2027-guide), including Google, Meta, Amazon, Microsoft, Apple, Stripe, Uber, Airbnb, TikTok, Databricks, Salesforce, Adobe, Spotify, Netflix, and several others. Twenty-seven are enabled by default; Wellfound is disabled because its job pages require an interactive session.
+The configuration contains the 28 sources from the [Extern Summer 2027 PM guide](https://www.extern.com/post/product-management-internships-summer-2027-guide), including Google, Meta, Amazon, Microsoft, Apple, Stripe, Uber, Airbnb, TikTok, Databricks, Salesforce, Adobe, Spotify, Netflix, and several others. Twenty-seven are enabled by default; Wellfound is disabled because its job pages require an interactive session. A separate US-wide [Summer 2027 community tracker](https://github.com/sndsh404/summer-2027-internships) is monitored as an independent back-check, so matching roles from companies outside that fixed list can also be detected.
 
 ## What it does
 
@@ -17,6 +17,7 @@ The configuration contains 28 sources from the [Extern Summer 2027 PM guide](htt
 - Stores a fingerprint for every match in SQLite, so a role alerts only once.
 - Retries temporary HTTP failures and checks sources concurrently.
 - Uses headless Chromium only for the few JavaScript-only searches; official JSON/HTML stays on the faster path.
+- Rejects empty JavaScript career shells instead of counting them as healthy job feeds.
 - Warns once per day after a source fails three consecutive checks.
 - Keeps undelivered roles pending if your phone notification provider is temporarily down.
 

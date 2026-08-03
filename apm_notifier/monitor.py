@@ -5,10 +5,10 @@ from dataclasses import dataclass
 import logging
 import time
 
-from .extract import extract_jobs
+from .extract import extract_jobs, response_has_job_signal
 from .fetch import BrowserRenderer, HttpClient
 from .filtering import RoleFilter
-from .models import Job, Source, SourceResult
+from .models import Job, Source, SourceResult, normalize_space
 from .notify import NotificationManager
 from .state import StateStore
 
@@ -68,11 +68,20 @@ class Monitor:
                     f"; {'; '.join(result.errors)}" if result.errors else "",
                 )
 
-        jobs_by_fingerprint: dict[str, Job] = {}
+        jobs_by_role: dict[tuple[str, str], Job] = {}
         for result in results:
             for job in result.jobs:
-                jobs_by_fingerprint[job.fingerprint] = job
-        jobs = tuple(jobs_by_fingerprint.values())
+                role_key = (
+                    normalize_space(job.company).casefold(),
+                    normalize_space(job.title).casefold(),
+                )
+                current = jobs_by_role.get(role_key)
+                if current is None or (
+                    current.source_id == "summer-2027-community-backcheck"
+                    and job.source_id != "summer-2027-community-backcheck"
+                ):
+                    jobs_by_role[role_key] = job
+        jobs = tuple(jobs_by_role.values())
 
         succeeded = sum(result.succeeded for result in results)
         failed = len(results) - succeeded
@@ -135,9 +144,22 @@ class Monitor:
         jobs: dict[str, Job] = {}
         errors: list[str] = []
         fetched = 0
-        for url in source.urls:
+        for index, url in enumerate(source.urls):
             try:
-                response = self.browser.fetch(url) if source.render else self.client.fetch(url, source.headers)
+                body = source.request_bodies[index] if source.request_bodies else ""
+                if source.render:
+                    if source.request_method != "GET" or body:
+                        raise ValueError("Rendered sources only support GET requests")
+                    response = self.browser.fetch(url)
+                else:
+                    response = self.client.fetch(
+                        url,
+                        source.headers,
+                        method=source.request_method,
+                        body=body,
+                    )
+                if not response_has_job_signal(response.text, response.content_type):
+                    raise ValueError(f"{url}: response contained no job records or explicit zero-result state")
                 fetched += 1
                 for job in extract_jobs(
                     response.text,
@@ -146,6 +168,9 @@ class Monitor:
                     response.final_url,
                     self.role_filter,
                 ):
+                    if source.verify_job_links and not self.client.url_exists(job.url):
+                        LOGGER.warning("Skipping confirmed dead back-check link: %s", job.url)
+                        continue
                     jobs[job.fingerprint] = job
             except Exception as error:
                 errors.append(str(error))
