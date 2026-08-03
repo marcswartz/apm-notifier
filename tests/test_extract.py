@@ -305,6 +305,73 @@ class ExtractJobsTests(unittest.TestCase):
         self.assertEqual(jobs[0].location, "Hoboken, NJ")
         self.assertTrue(jobs[0].url.endswith("#WD-123"))
 
+    def test_extracts_ea_avature_job_card_with_location(self) -> None:
+        html = """
+        <article class="article article--result article--non-toggle">
+          <h3>
+            <a class="link link_result" href="https://jobs.ea.com/en_US/careers/JobDetail/Product-Manager-Intern/123">
+              Product Manager Intern — Summer 2027
+            </a>
+          </h3>
+          <div class="article__header__text__subtitle">
+            <span class="list-item-location">Vancouver, Canada</span>
+            <span class="list-item-id">Role ID 123</span>
+          </div>
+        </article>
+        """
+        self.assertTrue(response_has_job_signal(html, "text/html"))
+        jobs = extract_jobs(
+            html,
+            "text/html",
+            self.source,
+            "https://jobs.ea.com/en_US/careers/SearchJobs/?search=product",
+            self.filter,
+        )
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(jobs[0].title, "Product Manager Intern — Summer 2027")
+        self.assertEqual(jobs[0].location, "Vancouver, Canada")
+        self.assertTrue(jobs[0].url.endswith("/Product-Manager-Intern/123"))
+
+    def test_extracts_shopify_react_router_job_feed(self) -> None:
+        devalue_payload = [
+            {"_1": 2},
+            "loaderData",
+            {"_3": 4},
+            "($locale)/careers",
+            {"_5": 6},
+            "jobPostingsWithJobs",
+            [7],
+            {"_8": 9},
+            "jobPosting",
+            {"_10": 11, "_12": 13, "_14": 15},
+            "title",
+            "Product Marketing Intern — Summer 2027",
+            "locationName",
+            "Toronto, Canada",
+            "externalLink",
+            "https://www.shopify.com/careers?ashby_jid=shopify-123",
+        ]
+        serialized_chunk = json.dumps(json.dumps(devalue_payload))
+        html = (
+            "<script>window.__reactRouterContext.streamController.enqueue("
+            f"{serialized_chunk});</script>"
+        )
+        self.assertTrue(response_has_job_signal(html, "text/html"))
+        jobs = extract_jobs(
+            html,
+            "text/html",
+            self.source,
+            "https://www.shopify.com/careers",
+            self.filter,
+        )
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(jobs[0].title, "Product Marketing Intern — Summer 2027")
+        self.assertEqual(jobs[0].location, "Toronto, Canada")
+        self.assertEqual(
+            jobs[0].url,
+            "https://www.shopify.com/careers?ashby_jid=shopify-123",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,5 +1,5 @@
 {
-  "source_note": "Seeded from Extern's Summer 2027 PM guide and pointed at official company search/career pages.",
+  "source_note": "Seeded from Extern's Summer 2027 PM guide, expanded with additional requested companies, and pointed at official company search/career pages.",
   "sources": [
     {
       "id": "google",
@@ -50,6 +50,40 @@
       "urls": [
         "https://jobs.apple.com/en-us/search?search=product%20manager%20intern&sort=relevance",
         "https://jobs.apple.com/en-us/search?search=product%20marketing%20intern&sort=relevance"
+      ]
+    },
+    {
+      "id": "ea",
+      "name": "Electronic Arts (EA)",
+      "career_url": "https://www.ea.com/careers/early-careers",
+      "urls": [
+        "https://jobs.ea.com/en_US/careers/SearchJobs/?search=product%20manager%20intern",
+        "https://jobs.ea.com/en_US/careers/SearchJobs/?search=product%20marketing%20intern",
+        "https://jobs.ea.com/en_US/careers/SearchJobs/?search=associate%20product%20manager"
+      ]
+    },
+    {
+      "id": "shopify",
+      "name": "Shopify",
+      "career_url": "https://www.shopify.com/careers/disciplines/product",
+      "urls": [
+        "https://www.shopify.com/careers"
+      ]
+    },
+    {
+      "id": "instacart",
+      "name": "Instacart",
+      "career_url": "https://www.instacart.careers/apm",
+      "urls": [
+        "https://api.greenhouse.io/v1/boards/instacart/jobs"
+      ]
+    },
+    {
+      "id": "patreon",
+      "name": "Patreon",
+      "career_url": "https://www.patreon.com/careers",
+      "urls": [
+        "https://api.ashbyhq.com/posting-api/job-board/patreon"
       ]
     },
     {

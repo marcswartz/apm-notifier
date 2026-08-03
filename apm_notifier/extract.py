@@ -270,6 +270,8 @@ def response_has_job_signal(text: str, content_type: str) -> bool:
         return True
     if 'data-testid="job-card"' in lowered:
         return True
+    if "jobpostingswithjobs" in lowered and "__reactroutercontext" in lowered:
+        return True
     parser = CareerHTMLParser()
     parser.feed(text)
     for script in (*parser.json_scripts, *parser.json_code_blocks):
@@ -532,6 +534,178 @@ def _jobs_from_walmart_cards(
     return jobs
 
 
+class EAJobCardParser(HTMLParser):
+    """Extract title and location from Electronic Arts' Avature result cards."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.cards: list[tuple[str, str, str]] = []
+        self._in_card = False
+        self._in_title = False
+        self._in_location = False
+        self._href = ""
+        self._title_parts: list[str] = []
+        self._location_parts: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        attributes = {key.casefold(): value or "" for key, value in attrs}
+        classes = attributes.get("class", "").split()
+        if tag.casefold() == "article" and "article--result" in classes:
+            self._in_card = True
+            self._href = ""
+            self._title_parts = []
+            self._location_parts = []
+        elif (
+            self._in_card
+            and tag.casefold() == "a"
+            and "link_result" in classes
+            and "/jobdetail/" in attributes.get("href", "").casefold()
+        ):
+            self._href = attributes["href"]
+            self._in_title = True
+        elif self._in_card and tag.casefold() == "span" and "list-item-location" in classes:
+            self._in_location = True
+
+    def handle_data(self, data: str) -> None:
+        if self._in_title:
+            self._title_parts.append(data)
+        if self._in_location:
+            self._location_parts.append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag.casefold() == "a" and self._in_title:
+            self._in_title = False
+        elif tag.casefold() == "span" and self._in_location:
+            self._in_location = False
+        elif tag.casefold() == "article" and self._in_card:
+            title = normalize_space(" ".join(self._title_parts))
+            location = normalize_space(" ".join(self._location_parts))
+            if self._href and title:
+                self.cards.append((title, location, self._href))
+            self._in_card = False
+
+
+def _jobs_from_ea_cards(
+    text: str,
+    source: Source,
+    base_url: str,
+    role_filter: RoleFilter,
+) -> list[Job]:
+    parser = EAJobCardParser()
+    parser.feed(text)
+    return [
+        Job(
+            source_id=source.id,
+            company=source.name,
+            title=title,
+            url=urljoin(base_url, href),
+            location=location,
+        )
+        for title, location, href in parser.cards
+        if role_filter.matches(title) and role_filter.matches_location(location, title)
+    ]
+
+
+SHOPIFY_ROUTER_CHUNK = re.compile(
+    r'window\.__reactRouterContext\.streamController\.enqueue\(("(?:\\.|[^"\\])*")\);'
+)
+
+
+def _hydrate_devalue(payload: Any) -> Any:
+    """Hydrate the indexed devalue representation used by Shopify's Remix app."""
+    if not isinstance(payload, list):
+        return None
+    memo: dict[int, Any] = {}
+
+    def hydrate_reference(value: Any) -> Any:
+        if isinstance(value, bool) or not isinstance(value, int):
+            return value
+        if value < 0 or value >= len(payload):
+            return None
+        return hydrate_index(value)
+
+    def hydrate_index(index: int) -> Any:
+        if index in memo:
+            return memo[index]
+        raw = payload[index]
+        if isinstance(raw, list):
+            result: list[Any] = []
+            memo[index] = result
+            result.extend(hydrate_reference(item) for item in raw)
+            return result
+        if isinstance(raw, dict):
+            result_dict: dict[str, Any] = {}
+            memo[index] = result_dict
+            for raw_key, raw_value in raw.items():
+                key = raw_key
+                key_match = re.fullmatch(r"_(\d+)", raw_key)
+                if key_match:
+                    hydrated_key = hydrate_index(int(key_match.group(1)))
+                    if not isinstance(hydrated_key, str):
+                        continue
+                    key = hydrated_key
+                result_dict[key] = hydrate_reference(raw_value)
+            return result_dict
+        memo[index] = raw
+        return raw
+
+    return hydrate_index(0) if payload else None
+
+
+def _jobs_from_shopify_router(
+    text: str,
+    source: Source,
+    base_url: str,
+    role_filter: RoleFilter,
+) -> list[Job]:
+    chunks: list[str] = []
+    for match in SHOPIFY_ROUTER_CHUNK.finditer(text):
+        try:
+            chunks.append(json.loads(match.group(1)))
+        except json.JSONDecodeError:
+            continue
+    if not chunks:
+        return []
+    try:
+        root = _hydrate_devalue(json.loads("".join(chunks)))
+    except json.JSONDecodeError:
+        return []
+    if not isinstance(root, dict):
+        return []
+    loader_data = root.get("loaderData")
+    if not isinstance(loader_data, dict):
+        return []
+    careers = loader_data.get("($locale)/careers")
+    if not isinstance(careers, dict):
+        return []
+    rows = careers.get("jobPostingsWithJobs")
+    if not isinstance(rows, list):
+        return []
+
+    jobs: list[Job] = []
+    for row in rows:
+        if not isinstance(row, dict) or not isinstance(row.get("jobPosting"), dict):
+            continue
+        posting = row["jobPosting"]
+        title = _first_string(posting, TITLE_KEYS)
+        location = _first_string(posting, ("locationName", "locationExternalName"))
+        raw_url = _first_string(posting, ("externalLink", "applyLink"))
+        if not title or not raw_url:
+            continue
+        if not role_filter.matches(title) or not role_filter.matches_location(location, title):
+            continue
+        jobs.append(
+            Job(
+                source_id=source.id,
+                company=source.name,
+                title=title,
+                url=urljoin(base_url, raw_url),
+                location=location,
+            )
+        )
+    return jobs
+
+
 def _json_object_after(text: str, marker: str) -> Any | None:
     """Decode a JSON object assigned inside a larger JavaScript block."""
     marker_at = text.find(marker)
@@ -590,10 +764,16 @@ def extract_jobs(
             jobs.extend(_jobs_from_meta_cards(text, source, base_url, role_filter))
         if "careers.walmart.com" in base_url:
             jobs.extend(_jobs_from_walmart_cards(text, source, base_url, role_filter))
+        if "jobs.ea.com" in base_url:
+            jobs.extend(_jobs_from_ea_cards(text, source, base_url, role_filter))
+        if "shopify.com/careers" in base_url:
+            jobs.extend(_jobs_from_shopify_router(text, source, base_url, role_filter))
         parser = CareerHTMLParser()
         parser.feed(text)
         for href, label in parser.anchors:
             if "metacareers.com" in base_url and "/profile/job_details/" in href:
+                continue
+            if "jobs.ea.com" in base_url and "/jobdetail/" in href.casefold():
                 continue
             title = label
             location = ""
