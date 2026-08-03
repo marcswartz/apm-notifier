@@ -3,6 +3,7 @@ from __future__ import annotations
 from html.parser import HTMLParser
 from html import unescape
 import json
+import re
 from typing import Any, Iterable
 from urllib.parse import urljoin
 
@@ -27,6 +28,11 @@ URL_KEYS = (
     "ref",
 )
 LOCATION_KEYS = ("location", "jobLocation", "job_location", "locations", "city")
+MICROSOFT_RENDERED_JOB = re.compile(
+    r"^(?P<title>.+?)\s+(?P<location>(?:United States|Canada|United Kingdom),.+?)"
+    r"\s+Posted\s+.+$",
+    re.IGNORECASE,
+)
 
 
 class CareerHTMLParser(HTMLParser):
@@ -215,13 +221,21 @@ def extract_jobs(
         parser = CareerHTMLParser()
         parser.feed(text)
         for href, label in parser.anchors:
-            if role_filter.matches(label) and role_filter.matches_location("", label):
+            title = label
+            location = ""
+            if "apply.careers.microsoft.com" in base_url and "/careers/job/" in href:
+                microsoft_match = MICROSOFT_RENDERED_JOB.match(label)
+                if microsoft_match:
+                    title = normalize_space(microsoft_match.group("title"))
+                    location = normalize_space(microsoft_match.group("location"))
+            if role_filter.matches(title) and role_filter.matches_location(location, title):
                 jobs.append(
                     Job(
                         source_id=source.id,
                         company=source.name,
-                        title=label,
+                        title=title,
                         url=urljoin(base_url, href),
+                        location=location,
                     )
                 )
         for script in parser.json_scripts:

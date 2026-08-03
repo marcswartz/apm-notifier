@@ -174,6 +174,7 @@ class BrowserRenderer:
             "--disable-dev-shm-usage",
             "--no-sandbox",
             "--incognito",
+            "--virtual-time-budget=12000",
             "--dump-dom",
             url,
         ]

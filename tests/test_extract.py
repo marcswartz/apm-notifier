@@ -83,6 +83,29 @@ class ExtractJobsTests(unittest.TestCase):
             "https://apply.careers.microsoft.com/careers/job/1970393556953113",
         )
 
+    def test_cleans_microsoft_rendered_job_card(self) -> None:
+        html = """
+        <a href="/careers/job/1970393556953113">
+          Product Manager: Internship Opportunities
+          United States, Washington, Redmond
+          Posted 16 hours ago
+        </a>
+        """
+        jobs = extract_jobs(
+            html,
+            "text/html",
+            self.source,
+            "https://apply.careers.microsoft.com/careers?query=product",
+            self.filter,
+        )
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(jobs[0].title, "Product Manager: Internship Opportunities")
+        self.assertEqual(jobs[0].location, "United States, Washington, Redmond")
+        self.assertEqual(
+            jobs[0].url,
+            "https://apply.careers.microsoft.com/careers/job/1970393556953113",
+        )
+
     def test_rejects_matching_job_outside_allowed_countries(self) -> None:
         payload = {
             "results": [
