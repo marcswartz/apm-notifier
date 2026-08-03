@@ -37,9 +37,9 @@
       "name": "Microsoft",
       "career_url": "https://careers.microsoft.com/students/",
       "urls": [
-        "https://apply.careers.microsoft.com/careers?query=product%20manager%20intern&start=0",
-        "https://apply.careers.microsoft.com/careers?query=product%20marketing%20intern&start=0",
-        "https://apply.careers.microsoft.com/careers?query=associate%20product%20manager&start=0"
+        "https://apply.careers.microsoft.com/api/pcsx/search?domain=microsoft.com&query=product%20manager%20intern&location=&start=0",
+        "https://apply.careers.microsoft.com/api/pcsx/search?domain=microsoft.com&query=product%20marketing%20intern&location=&start=0",
+        "https://apply.careers.microsoft.com/api/pcsx/search?domain=microsoft.com&query=associate%20product%20manager&location=&start=0"
       ]
     },
     {

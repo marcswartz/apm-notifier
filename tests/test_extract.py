@@ -49,6 +49,40 @@ class ExtractJobsTests(unittest.TestCase):
         self.assertEqual(jobs[0].location, "Toronto")
         self.assertEqual(jobs[0].url, "https://jobs.example.com/jobs/pm-7")
 
+    def test_extracts_microsoft_positions_api_job(self) -> None:
+        payload = {
+            "data": {
+                "positions": [
+                    {
+                        "id": 1970393556953113,
+                        "name": "Product Manager: Internship Opportunities",
+                        "locations": ["United States, Washington, Redmond"],
+                        "positionUrl": "/careers/job/1970393556953113",
+                    },
+                    {
+                        "id": 1970393556928915,
+                        "name": "Senior Product Manager / Product Manager",
+                        "locations": ["United States, Washington, Redmond"],
+                        "positionUrl": "/careers/job/1970393556928915",
+                    },
+                ]
+            }
+        }
+        jobs = extract_jobs(
+            json.dumps(payload),
+            "application/json",
+            self.source,
+            "https://apply.careers.microsoft.com/api/pcsx/search",
+            self.filter,
+        )
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(jobs[0].title, "Product Manager: Internship Opportunities")
+        self.assertEqual(jobs[0].location, "United States, Washington, Redmond")
+        self.assertEqual(
+            jobs[0].url,
+            "https://apply.careers.microsoft.com/careers/job/1970393556953113",
+        )
+
     def test_rejects_matching_job_outside_allowed_countries(self) -> None:
         payload = {
             "results": [

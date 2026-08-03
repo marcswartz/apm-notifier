@@ -13,6 +13,7 @@ from .models import Job, Source, normalize_space
 TITLE_KEYS = ("title", "jobTitle", "job_title", "postingTitle", "posting_title", "posting_name", "name", "text")
 URL_KEYS = (
     "canonicalPositionUrl",
+    "positionUrl",
     "job_path",
     "url_next_step",
     "url",
