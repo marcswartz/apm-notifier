@@ -244,7 +244,7 @@ ZERO_RESULT_MARKERS = (
     "0 results",
 )
 JOB_DETAIL_HREF = re.compile(
-    r"/(?:careers/)?(?:job|jobs|details|positions|jobdetail)/(?:results/)?[^/?#\"']+",
+    r"/(?:profile/job_details|(?:careers/)?(?:job|jobs|details|positions|jobdetail))/(?:results/)?[^/?#\"']+",
     re.IGNORECASE,
 )
 NUMERIC_SEARCH_HREF = re.compile(r"/search/\d{6,}", re.IGNORECASE)
@@ -267,6 +267,8 @@ def response_has_job_signal(text: str, content_type: str) -> bool:
     if any(marker in lowered for marker in ZERO_RESULT_MARKERS):
         return True
     if "| company | role | location |" in lowered:
+        return True
+    if 'data-testid="job-card"' in lowered:
         return True
     parser = CareerHTMLParser()
     parser.feed(text)
@@ -375,6 +377,161 @@ def _jobs_from_yc_cards(
     ]
 
 
+class MetaJobCardParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.cards: list[tuple[str, str, str]] = []
+        self._href = ""
+        self._in_title = False
+        self._in_span = False
+        self._title_parts: list[str] = []
+        self._span_parts: list[str] = []
+        self._current_span: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        attributes = {key.casefold(): value or "" for key, value in attrs}
+        if tag.casefold() == "a" and "/profile/job_details/" in attributes.get("href", ""):
+            self._href = attributes["href"]
+            self._title_parts = []
+            self._span_parts = []
+        elif self._href and tag.casefold() == "h3":
+            self._in_title = True
+        elif self._href and tag.casefold() == "span":
+            self._in_span = True
+            self._current_span = []
+
+    def handle_data(self, data: str) -> None:
+        if self._in_title:
+            self._title_parts.append(data)
+        if self._in_span:
+            self._current_span.append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag.casefold() == "h3" and self._in_title:
+            self._in_title = False
+        elif tag.casefold() == "span" and self._in_span:
+            value = normalize_space(" ".join(self._current_span))
+            if value:
+                self._span_parts.append(value)
+            self._in_span = False
+        elif tag.casefold() == "a" and self._href:
+            title = normalize_space(" ".join(self._title_parts))
+            location = self._span_parts[0] if self._span_parts else ""
+            if title:
+                self.cards.append((title, location, self._href))
+            self._href = ""
+
+
+def _jobs_from_meta_cards(
+    text: str,
+    source: Source,
+    base_url: str,
+    role_filter: RoleFilter,
+) -> list[Job]:
+    parser = MetaJobCardParser()
+    parser.feed(text)
+    return [
+        Job(
+            source_id=source.id,
+            company=source.name,
+            title=title,
+            url=urljoin(base_url, href),
+            location=location,
+        )
+        for title, location, href in parser.cards
+        if role_filter.matches(title) and role_filter.matches_location(location, title)
+    ]
+
+
+class WalmartJobCardParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.cards: list[tuple[str, str, tuple[str, ...]]] = []
+        self._depth = 0
+        self._identifier = ""
+        self._in_title = False
+        self._in_span = False
+        self._title_parts: list[str] = []
+        self._span_values: list[str] = []
+        self._current_span: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        attributes = {key.casefold(): value or "" for key, value in attrs}
+        if (
+            not self._depth
+            and tag.casefold() == "div"
+            and attributes.get("data-testid") == "job-card"
+        ):
+            self._depth = 1
+            self._identifier = attributes.get("data-job-id", "")
+            self._title_parts = []
+            self._span_values = []
+            return
+        if not self._depth:
+            return
+        if tag.casefold() == "div":
+            self._depth += 1
+        elif tag.casefold() == "span":
+            self._in_span = True
+            self._current_span = []
+            if attributes.get("data-testid") == "job-title":
+                self._in_title = True
+
+    def handle_data(self, data: str) -> None:
+        if self._in_span:
+            self._current_span.append(data)
+        if self._in_title:
+            self._title_parts.append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        if not self._depth:
+            return
+        if tag.casefold() == "span" and self._in_span:
+            value = normalize_space(" ".join(self._current_span))
+            if value:
+                self._span_values.append(value)
+            self._in_span = False
+            self._in_title = False
+        elif tag.casefold() == "div":
+            self._depth -= 1
+            if self._depth == 0 and self._identifier and self._title_parts:
+                self.cards.append(
+                    (
+                        self._identifier,
+                        normalize_space(" ".join(self._title_parts)),
+                        tuple(self._span_values),
+                    )
+                )
+
+
+def _jobs_from_walmart_cards(
+    text: str,
+    source: Source,
+    base_url: str,
+    role_filter: RoleFilter,
+) -> list[Job]:
+    parser = WalmartJobCardParser()
+    parser.feed(text)
+    jobs: list[Job] = []
+    for identifier, title, spans in parser.cards:
+        location = next(
+            (value for value in spans if role_filter.matches_location(value, title)),
+            "",
+        )
+        if not role_filter.matches(title) or not location:
+            continue
+        jobs.append(
+            Job(
+                source_id=source.id,
+                company=source.name,
+                title=title,
+                url=f"{base_url}#{identifier}",
+                location=location,
+            )
+        )
+    return jobs
+
+
 def _json_object_after(text: str, marker: str) -> Any | None:
     """Decode a JSON object assigned inside a larger JavaScript block."""
     marker_at = text.find(marker)
@@ -429,9 +586,15 @@ def extract_jobs(
         jobs.extend(_jobs_from_markdown(text, source, role_filter))
         if "workatastartup.com" in base_url:
             jobs.extend(_jobs_from_yc_cards(text, source, base_url, role_filter))
+        if "metacareers.com" in base_url:
+            jobs.extend(_jobs_from_meta_cards(text, source, base_url, role_filter))
+        if "careers.walmart.com" in base_url:
+            jobs.extend(_jobs_from_walmart_cards(text, source, base_url, role_filter))
         parser = CareerHTMLParser()
         parser.feed(text)
         for href, label in parser.anchors:
+            if "metacareers.com" in base_url and "/profile/job_details/" in href:
+                continue
             title = label
             location = ""
             if "apply.careers.microsoft.com" in base_url and "/careers/job/" in href:

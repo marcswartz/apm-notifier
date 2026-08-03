@@ -91,6 +91,7 @@ class ExtractJobsTests(unittest.TestCase):
           Posted 16 hours ago
         </a>
         """
+        self.assertTrue(response_has_job_signal(html, "text/html"))
         jobs = extract_jobs(
             html,
             "text/html",
@@ -265,6 +266,44 @@ class ExtractJobsTests(unittest.TestCase):
         self.assertEqual(jobs[0].company, "Dedalus Labs")
         self.assertEqual(jobs[0].location, "San Francisco, CA, US")
         self.assertEqual(jobs[0].url, "https://www.workatastartup.com/jobs/98000")
+
+    def test_extracts_rendered_meta_job_card(self) -> None:
+        html = """
+        <a href="/profile/job_details/123" target="_blank">
+          <div><h3>Rotational Product Manager — 2027</h3></div>
+          <div><span>Menlo Park, CA</span><span>Product Management</span></div>
+        </a>
+        """
+        self.assertTrue(response_has_job_signal(html, "text/html"))
+        jobs = extract_jobs(
+            html,
+            "text/html",
+            self.source,
+            "https://www.metacareers.com/jobsearch/",
+            self.filter,
+        )
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(jobs[0].title, "Rotational Product Manager — 2027")
+        self.assertEqual(jobs[0].location, "Menlo Park, CA")
+        self.assertEqual(jobs[0].url, "https://www.metacareers.com/profile/job_details/123")
+
+    def test_extracts_rendered_walmart_job_card(self) -> None:
+        html = """
+        <div data-testid="job-card" data-job-id="WD-123" role="link">
+          <div><span data-testid="job-title">Product Marketing Intern — Summer 2027</span></div>
+          <div><span data-testid="category">Marketing</span><span>Hoboken, NJ</span></div>
+        </div>
+        """
+        jobs = extract_jobs(
+            html,
+            "text/html",
+            self.source,
+            "https://careers.walmart.com/us/en/results?searchQuery=product%20marketing%20intern",
+            self.filter,
+        )
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(jobs[0].location, "Hoboken, NJ")
+        self.assertTrue(jobs[0].url.endswith("#WD-123"))
 
 
 if __name__ == "__main__":

@@ -226,9 +226,10 @@
       "id": "walmart",
       "name": "Walmart",
       "career_url": "https://careers.walmart.com/",
+      "render": true,
       "urls": [
-        "https://careers.walmart.com/results?q=product%20manager%20intern",
-        "https://careers.walmart.com/results?q=product%20marketing%20intern"
+        "https://careers.walmart.com/us/en/results?searchQuery=product%20manager%20intern",
+        "https://careers.walmart.com/us/en/results?searchQuery=product%20marketing%20intern"
       ]
     },
     {
