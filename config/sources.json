@@ -234,8 +234,8 @@
       "name": "Netflix",
       "career_url": "https://jobs.netflix.com/",
       "urls": [
-        "https://explore.jobs.netflix.net/careers?query=product%20manager%20intern&start=0",
-        "https://explore.jobs.netflix.net/careers?query=product%20marketing%20intern&start=0"
+        "https://app.eightfold.ai/careers?domain=netflix.com&query=product%20manager%20intern&start=0",
+        "https://app.eightfold.ai/careers?domain=netflix.com&query=product%20marketing%20intern&start=0"
       ]
     },
     {
