@@ -248,6 +248,52 @@ JOB_DETAIL_HREF = re.compile(
     re.IGNORECASE,
 )
 NUMERIC_SEARCH_HREF = re.compile(r"/search/\d{6,}", re.IGNORECASE)
+GOOGLE_INIT_DATA = re.compile(
+    r"AF_initDataCallback\(\{key:\s*'ds:1'.*?data:\s*",
+    re.DOTALL,
+)
+
+
+def _json_array_at(text: str, start: int) -> Any | None:
+    """Decode a JSON array embedded inside a larger JavaScript expression."""
+    array_start = text.find("[", start)
+    if array_start < 0:
+        return None
+    depth = 0
+    in_string = False
+    escaped = False
+    for index in range(array_start, len(text)):
+        character = text[index]
+        if in_string:
+            if escaped:
+                escaped = False
+            elif character == "\\":
+                escaped = True
+            elif character == '"':
+                in_string = False
+            continue
+        if character == '"':
+            in_string = True
+        elif character == "[":
+            depth += 1
+        elif character == "]":
+            depth -= 1
+            if depth == 0:
+                try:
+                    return json.loads(text[array_start : index + 1])
+                except json.JSONDecodeError:
+                    return None
+    return None
+
+
+def _google_result_rows(text: str) -> list[Any] | None:
+    match = GOOGLE_INIT_DATA.search(text)
+    if not match:
+        return None
+    payload = _json_array_at(text, match.end())
+    if not isinstance(payload, list) or not payload or not isinstance(payload[0], list):
+        return None
+    return payload[0]
 
 
 def response_has_job_signal(text: str, content_type: str) -> bool:
@@ -271,6 +317,8 @@ def response_has_job_signal(text: str, content_type: str) -> bool:
     if 'data-testid="job-card"' in lowered:
         return True
     if "jobpostingswithjobs" in lowered and "__reactroutercontext" in lowered:
+        return True
+    if _google_result_rows(text) is not None:
         return True
     parser = CareerHTMLParser()
     parser.feed(text)
@@ -534,6 +582,52 @@ def _jobs_from_walmart_cards(
     return jobs
 
 
+def _jobs_from_google_init_data(
+    text: str,
+    source: Source,
+    role_filter: RoleFilter,
+) -> list[Job]:
+    rows = _google_result_rows(text)
+    if rows is None:
+        return []
+    jobs: list[Job] = []
+    for row in rows:
+        if not isinstance(row, list) or len(row) <= 9:
+            continue
+        identifier = normalize_space(str(row[0]))
+        title = normalize_space(row[1]) if isinstance(row[1], str) else ""
+        raw_locations = row[9]
+        locations: list[str] = []
+        if isinstance(raw_locations, list):
+            for raw_location in raw_locations:
+                if (
+                    isinstance(raw_location, list)
+                    and raw_location
+                    and isinstance(raw_location[0], str)
+                ):
+                    location = normalize_space(raw_location[0])
+                    if location:
+                        locations.append(location)
+        location_text = "; ".join(dict.fromkeys(locations))[:300]
+        if not identifier.isdigit() or not role_filter.matches(title):
+            continue
+        if not role_filter.matches_location(location_text, title):
+            continue
+        jobs.append(
+            Job(
+                source_id=source.id,
+                company=source.name,
+                title=title,
+                url=(
+                    "https://www.google.com/about/careers/applications/jobs/results/"
+                    f"{identifier}"
+                ),
+                location=location_text,
+            )
+        )
+    return jobs
+
+
 class EAJobCardParser(HTMLParser):
     """Extract title and location from Electronic Arts' Avature result cards."""
 
@@ -764,6 +858,8 @@ def extract_jobs(
             jobs.extend(_jobs_from_meta_cards(text, source, base_url, role_filter))
         if "careers.walmart.com" in base_url:
             jobs.extend(_jobs_from_walmart_cards(text, source, base_url, role_filter))
+        if "google.com/about/careers/applications/jobs/results" in base_url:
+            jobs.extend(_jobs_from_google_init_data(text, source, role_filter))
         if "jobs.ea.com" in base_url:
             jobs.extend(_jobs_from_ea_cards(text, source, base_url, role_filter))
         if "shopify.com/careers" in base_url:

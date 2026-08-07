@@ -372,6 +372,60 @@ class ExtractJobsTests(unittest.TestCase):
             "https://www.shopify.com/careers?ashby_jid=shopify-123",
         )
 
+    def test_extracts_google_init_data_without_browser_rendering(self) -> None:
+        matching_row = [
+            "123456789012345678",
+            "Product Manager Intern — Summer 2027",
+            "https://www.google.com/about/careers/applications/signin?jobId=token",
+            None,
+            None,
+            None,
+            None,
+            "Google",
+            "en-US",
+            [["Toronto, ON, Canada", ["111 Richmond St W, Toronto, ON"], "Toronto"]],
+        ]
+        unrelated_row = [
+            "876543210987654321",
+            "Senior Product Manager",
+            "https://www.google.com/about/careers/applications/signin?jobId=other",
+            None,
+            None,
+            None,
+            None,
+            "Google",
+            "en-US",
+            [["Mountain View, CA, USA"]],
+        ]
+        payload = json.dumps([[matching_row, unrelated_row], None, 2, 2])
+        html = (
+            "<script>AF_initDataCallback({key: 'ds:1', hash: '2', data:"
+            f"{payload}"
+            "});</script>"
+        )
+        self.assertTrue(response_has_job_signal(html, "text/html"))
+        jobs = extract_jobs(
+            html,
+            "text/html",
+            self.source,
+            "https://www.google.com/about/careers/applications/jobs/results/?q=product",
+            self.filter,
+        )
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(jobs[0].title, "Product Manager Intern — Summer 2027")
+        self.assertEqual(jobs[0].location, "Toronto, ON, Canada")
+        self.assertEqual(
+            jobs[0].url,
+            "https://www.google.com/about/careers/applications/jobs/results/123456789012345678",
+        )
+
+    def test_google_empty_results_are_still_a_healthy_response(self) -> None:
+        html = (
+            "<script>AF_initDataCallback("
+            "{key: 'ds:1', hash: '2', data:[[],null,0,0]});</script>"
+        )
+        self.assertTrue(response_has_job_signal(html, "text/html"))
+
 
 if __name__ == "__main__":
     unittest.main()
