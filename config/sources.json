@@ -176,9 +176,35 @@
       "id": "adobe",
       "name": "Adobe",
       "career_url": "https://www.adobe.com/careers.html",
+      "request_method": "POST",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "url_template": "https://adobe.wd5.myworkdayjobs.com/external_experienced/{path}",
       "urls": [
-        "https://careers.adobe.com/us/en/search-results?keywords=product%20manager%20intern",
-        "https://careers.adobe.com/us/en/search-results?keywords=product%20marketing%20intern"
+        "https://adobe.wd5.myworkdayjobs.com/wday/cxs/adobe/external_experienced/jobs",
+        "https://adobe.wd5.myworkdayjobs.com/wday/cxs/adobe/external_experienced/jobs",
+        "https://adobe.wd5.myworkdayjobs.com/wday/cxs/adobe/external_experienced/jobs"
+      ],
+      "request_bodies": [
+        {
+          "appliedFacets": {},
+          "limit": 20,
+          "offset": 0,
+          "searchText": "product manager intern"
+        },
+        {
+          "appliedFacets": {},
+          "limit": 20,
+          "offset": 0,
+          "searchText": "product marketing intern"
+        },
+        {
+          "appliedFacets": {},
+          "limit": 20,
+          "offset": 0,
+          "searchText": "associate product manager"
+        }
       ]
     },
     {
