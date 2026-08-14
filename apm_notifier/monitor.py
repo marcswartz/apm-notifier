@@ -171,6 +171,18 @@ class Monitor:
                     if source.verify_job_links and not self.client.url_exists(job.url):
                         LOGGER.warning("Skipping confirmed dead back-check link: %s", job.url)
                         continue
+                    if (
+                        source.verify_graduate_education
+                        and self.role_filter.is_graduate_product_manager(job.title)
+                    ):
+                        detail = self.client.fetch(job.url)
+                        if not self.role_filter.allows_bachelors(detail.text):
+                            LOGGER.info(
+                                "Skipping master's-only graduate role: %s — %s",
+                                source.name,
+                                job.title,
+                            )
+                            continue
                     jobs[job.fingerprint] = job
             except Exception as error:
                 errors.append(str(error))

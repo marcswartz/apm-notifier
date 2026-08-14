@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from html import unescape
 import re
 
 from .models import normalize_space
@@ -8,6 +9,11 @@ from .models import normalize_space
 EXPLICIT_EARLY_CAREER = re.compile(
     r"\b(?:associate\s+product\s+manager|rotational\s+product\s+manager|"
     r"product\s+manager\s*,?\s+associate)\b",
+    re.IGNORECASE,
+)
+GRADUATE_PRODUCT_MANAGER = re.compile(
+    r"(?:\bproduct\s+manager\b.{0,100}\bgraduate\b|"
+    r"\bgraduate\b.{0,100}\bproduct\s+manager\b)",
     re.IGNORECASE,
 )
 PRODUCT_ROLE = re.compile(
@@ -22,6 +28,16 @@ PRODUCT_DEVELOPMENT_PROGRAM = re.compile(
 )
 NEGATIVE_SENIORITY = re.compile(
     r"\b(?:senior|sr\.?|staff|principal|director|head|vice president|vp)\b",
+    re.IGNORECASE,
+)
+MASTERS_REQUIRED = re.compile(
+    r"\b(?:completing|completed|pursuing|hold(?:ing)?|have)\b.{0,100}"
+    r"\bmaster(?:'s|s)?\s+degree\b|"
+    r"\bmaster(?:'s|s)?\s+degree\b.{0,80}\b(?:required|minimum|must)\b",
+    re.IGNORECASE | re.DOTALL,
+)
+BACHELORS_ALLOWED = re.compile(
+    r"\b(?:bachelor(?:'s|s)?\s+degree|undergraduate|bachelor\s*/\s*master|bs\s*/\s*ms)\b",
     re.IGNORECASE,
 )
 
@@ -206,7 +222,9 @@ class RoleFilter:
         if years & self.excluded_years and self.target_year not in years:
             return False
 
-        early_career = bool(EXPLICIT_EARLY_CAREER.search(candidate))
+        early_career = bool(
+            EXPLICIT_EARLY_CAREER.search(candidate) or GRADUATE_PRODUCT_MANAGER.search(candidate)
+        )
         internship = bool(INTERNSHIP.search(candidate) and PRODUCT_ROLE.search(candidate))
         product_development_program = bool(PRODUCT_DEVELOPMENT_PROGRAM.search(candidate))
         if not early_career and not internship and not product_development_program:
@@ -215,6 +233,23 @@ class RoleFilter:
         if NEGATIVE_SENIORITY.search(candidate) and not INTERNSHIP.search(candidate):
             return False
         return True
+
+    @staticmethod
+    def is_graduate_product_manager(title: str) -> bool:
+        return bool(GRADUATE_PRODUCT_MANAGER.search(normalize_space(title)))
+
+    @staticmethod
+    def allows_bachelors(detail_text: str) -> bool:
+        """Reject roles whose minimum qualifications explicitly require a master's degree."""
+        readable = unescape(detail_text).replace("\\n", "\n").replace("\\'", "'")
+        lowered = readable.casefold()
+        start = lowered.find("minimum qualifications")
+        if start >= 0:
+            readable = readable[start : start + 8_000]
+            preferred = readable.casefold().find("preferred qualifications")
+            if preferred >= 0:
+                readable = readable[:preferred]
+        return not MASTERS_REQUIRED.search(readable) or bool(BACHELORS_ALLOWED.search(readable))
 
     def matches_location(self, location: str, title: str = "") -> bool:
         """Accept only roles with positive evidence of an allowed country."""

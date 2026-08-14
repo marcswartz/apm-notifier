@@ -493,6 +493,66 @@ def _jobs_from_meta_cards(
     ]
 
 
+class TikTokJobCardParser(HTMLParser):
+    """Extract the title and location without folding all TikTok card metadata into the title."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.cards: list[tuple[str, str, str]] = []
+        self._href = ""
+        self._in_span = False
+        self._span_parts: list[str] = []
+        self._current_span: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        attributes = {key.casefold(): value or "" for key, value in attrs}
+        href = attributes.get("href", "")
+        if tag.casefold() == "a" and re.search(r"/search/\d{6,}/?$", href):
+            self._href = href
+            self._span_parts = []
+        elif self._href and tag.casefold() == "span":
+            self._in_span = True
+            self._current_span = []
+
+    def handle_data(self, data: str) -> None:
+        if self._in_span:
+            self._current_span.append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag.casefold() == "span" and self._in_span:
+            value = normalize_space(" ".join(self._current_span))
+            if value:
+                self._span_parts.append(value)
+            self._in_span = False
+        elif tag.casefold() == "a" and self._href:
+            if self._span_parts:
+                title = self._span_parts[0]
+                location = self._span_parts[1] if len(self._span_parts) > 1 else ""
+                self.cards.append((title, location, self._href))
+            self._href = ""
+
+
+def _jobs_from_tiktok_cards(
+    text: str,
+    source: Source,
+    base_url: str,
+    role_filter: RoleFilter,
+) -> list[Job]:
+    parser = TikTokJobCardParser()
+    parser.feed(text)
+    return [
+        Job(
+            source_id=source.id,
+            company=source.name,
+            title=title,
+            url=urljoin(base_url, href),
+            location=location,
+        )
+        for title, location, href in parser.cards
+        if role_filter.matches(title) and role_filter.matches_location(location, title)
+    ]
+
+
 class WalmartJobCardParser(HTMLParser):
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
@@ -856,6 +916,8 @@ def extract_jobs(
             jobs.extend(_jobs_from_yc_cards(text, source, base_url, role_filter))
         if "metacareers.com" in base_url:
             jobs.extend(_jobs_from_meta_cards(text, source, base_url, role_filter))
+        if "lifeattiktok.com" in base_url:
+            jobs.extend(_jobs_from_tiktok_cards(text, source, base_url, role_filter))
         if "careers.walmart.com" in base_url:
             jobs.extend(_jobs_from_walmart_cards(text, source, base_url, role_filter))
         if "google.com/about/careers/applications/jobs/results" in base_url:
@@ -870,6 +932,8 @@ def extract_jobs(
             if "metacareers.com" in base_url and "/profile/job_details/" in href:
                 continue
             if "jobs.ea.com" in base_url and "/jobdetail/" in href.casefold():
+                continue
+            if "lifeattiktok.com" in base_url and NUMERIC_SEARCH_HREF.search(href):
                 continue
             title = label
             location = ""

@@ -287,6 +287,37 @@ class ExtractJobsTests(unittest.TestCase):
         self.assertEqual(jobs[0].location, "Menlo Park, CA")
         self.assertEqual(jobs[0].url, "https://www.metacareers.com/profile/job_details/123")
 
+    def test_extracts_clean_tiktok_graduate_job_card(self) -> None:
+        html = """
+        <a href="https://lifeattiktok.com/search/7673256057754290437">
+          <div><span class="font-bold">
+            Creative Product Manager Graduate (Creative and Brand Innovation) - 2027 Start
+          </span></div>
+          <div>
+            <span>San Jose</span><span>Product - Product manager</span>
+            <span>Regular</span><span>Bachelor/Master</span>
+          </div>
+        </a>
+        """
+        self.assertTrue(response_has_job_signal(html, "text/html"))
+        jobs = extract_jobs(
+            html,
+            "text/html",
+            self.source,
+            "https://lifeattiktok.com/search?keyword=product%20manager%20graduate",
+            self.filter,
+        )
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(
+            jobs[0].title,
+            "Creative Product Manager Graduate (Creative and Brand Innovation) - 2027 Start",
+        )
+        self.assertEqual(jobs[0].location, "San Jose")
+        self.assertEqual(
+            jobs[0].url,
+            "https://lifeattiktok.com/search/7673256057754290437",
+        )
+
     def test_extracts_rendered_walmart_job_card(self) -> None:
         html = """
         <div data-testid="job-card" data-job-id="WD-123" role="link">

@@ -55,6 +55,7 @@ class Source:
     request_method: str = "GET"
     request_bodies: tuple[str, ...] = ()
     verify_job_links: bool = False
+    verify_graduate_education: bool = False
 
 
 @dataclass(frozen=True)

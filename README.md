@@ -3,17 +3,19 @@
 APM Notifier watches official company career searches and sends a one-time phone alert when it finds a new:
 
 - Associate Product Manager or Rotational Product Manager role
+- Bachelor-eligible Graduate Product Manager role
 - Product Manager / Product Management internship or co-op
 - Technical or Growth Product Manager internship
 - Product Marketing or Product Marketing Manager internship
 
-The configuration monitors 31 company and job-network targets, including Google, Meta, Amazon, Microsoft, Apple, TikTok, Electronic Arts, Shopify, Instacart, Patreon, Stripe, Uber, Airbnb, Databricks, Salesforce, Adobe, Spotify, Netflix, and several others. Wellfound is present but disabled because its job pages require an interactive session. A separate US-wide [Summer 2027 community tracker](https://github.com/sndsh404/summer-2027-internships) is monitored as an independent back-check, so matching roles from companies outside that fixed list can also be detected. The original target list was seeded from the [Extern Summer 2027 PM guide](https://www.extern.com/post/product-management-internships-summer-2027-guide).
+The configuration monitors 32 company and job-network targets, including Google, Meta, Amazon, Microsoft, Apple, TikTok, Electronic Arts, Shopify, Instacart, Patreon, Stripe, Uber, Airbnb, Databricks, Salesforce, Adobe, Spotify, Netflix, and several others. Wellfound is present but disabled because its job pages require an interactive session. A separate US-wide [Summer 2027 community tracker](https://github.com/sndsh404/summer-2027-internships) is monitored as an independent back-check, so matching roles from companies outside that fixed list can also be detected. The original target list was seeded from the [Extern Summer 2027 PM guide](https://www.extern.com/post/product-management-internships-summer-2027-guide).
 
 ## What it does
 
 - Checks the configured career searches every five minutes by default.
 - Accepts titles mentioning 2027 or no year and rejects explicitly older-year titles.
 - Only alerts for roles with a recognizable US, Canadian, or UK location. Ambiguous `Remote` or missing locations are excluded.
+- Checks the official description of graduate PM matches from configured sources and excludes roles whose minimum qualifications explicitly require a master's degree.
 - Stores a fingerprint for every match in SQLite, so a role alerts only once.
 - Retries temporary HTTP failures and checks sources concurrently.
 - Uses headless Chromium only for the few JavaScript-only searches; official JSON/HTML stays on the faster path.

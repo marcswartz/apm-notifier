@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from http.client import IncompleteRead
 from pathlib import Path
 import random
 import os
@@ -73,10 +74,10 @@ class HttpClient:
             try:
                 request = Request(url, data=encoded_body, headers=headers, method=method)
                 with urlopen(request, timeout=self.timeout_seconds, context=self.ssl_context) as response:
-                    body = response.read()
+                    response_body = response.read()
                     content_type = response.headers.get("Content-Type", "")
                     charset = response.headers.get_content_charset() or "utf-8"
-                    text = body.decode(charset, errors="replace")
+                    text = response_body.decode(charset, errors="replace")
                     self._check_for_block_page(text, content_type)
                     return FetchResult(
                         requested_url=url,
@@ -91,9 +92,18 @@ class HttpClient:
                 retry_after = error.headers.get("Retry-After", "")
                 delay = int(retry_after) if retry_after.isdigit() else 1.5 * (attempt + 1)
                 time.sleep(min(delay, 10) + random.random() / 4)
-            except (TimeoutError, URLError, OSError, FetchError, json.JSONDecodeError) as error:
+            except (
+                TimeoutError,
+                URLError,
+                OSError,
+                FetchError,
+                IncompleteRead,
+                json.JSONDecodeError,
+            ) as error:
                 last_error = error
-                if "CERTIFICATE_VERIFY_FAILED" in str(error) and shutil.which("curl"):
+                if (
+                    "CERTIFICATE_VERIFY_FAILED" in str(error) or isinstance(error, IncompleteRead)
+                ) and shutil.which("curl"):
                     try:
                         return self._fetch_with_curl(url, headers, method, body)
                     except FetchError as curl_error:
@@ -206,25 +216,32 @@ class BrowserRenderer:
             "--dump-dom",
             url,
         ]
+        last_error: Exception | None = None
         with self._render_lock:
-            try:
-                completed = subprocess.run(
-                    command,
-                    capture_output=True,
-                    text=True,
-                    timeout=self.timeout_seconds + 20,
-                    check=False,
-                )
-            except (OSError, subprocess.TimeoutExpired) as error:
-                raise FetchError(f"{url}: browser render failed: {error}") from error
-        html = completed.stdout.strip()
-        if completed.returncode != 0 or not html:
-            detail = completed.stderr.strip().splitlines()[-1:] or ["empty browser response"]
-            raise FetchError(f"{url}: browser render failed: {detail[0]}")
-        HttpClient._check_for_block_page(html, "text/html")
-        return FetchResult(
-            requested_url=url,
-            final_url=url,
-            content_type="text/html; charset=utf-8",
-            text=html,
-        )
+            for attempt in range(2):
+                try:
+                    completed = subprocess.run(
+                        command,
+                        capture_output=True,
+                        text=True,
+                        timeout=self.timeout_seconds + 20,
+                        check=False,
+                    )
+                    html = completed.stdout.strip()
+                    if completed.returncode != 0 or not html:
+                        detail = completed.stderr.strip().splitlines()[-1:] or [
+                            "empty browser response"
+                        ]
+                        raise FetchError(f"{url}: browser render failed: {detail[0]}")
+                    HttpClient._check_for_block_page(html, "text/html")
+                    return FetchResult(
+                        requested_url=url,
+                        final_url=url,
+                        content_type="text/html; charset=utf-8",
+                        text=html,
+                    )
+                except (OSError, subprocess.TimeoutExpired, FetchError) as error:
+                    last_error = error
+                    if attempt == 0:
+                        time.sleep(1 + random.random() / 4)
+        raise FetchError(f"{url}: browser render failed after retry: {last_error}") from last_error

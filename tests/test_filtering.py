@@ -17,6 +17,8 @@ class RoleFilterTests(unittest.TestCase):
             "Product Marketing Intern",
             "Product Marketing Manager Internship — Summer 2027",
             "Product Development Internship Program (Summer 2027)",
+            "Creative Product Manager Graduate (Creative and Brand Innovation) - 2027 Start",
+            "Graduate Product Manager — 2027 Start",
         )
         for title in accepted:
             with self.subTest(title=title):
@@ -64,6 +66,23 @@ class RoleFilterTests(unittest.TestCase):
     def test_can_read_location_from_a_title(self) -> None:
         self.assertTrue(self.filter.matches_location("", "Product Manager Intern — New York"))
         self.assertFalse(self.filter.matches_location("", "Product Manager Intern — Singapore"))
+
+    def test_rejects_masters_only_graduate_qualification(self) -> None:
+        details = """
+        Minimum Qualifications:
+        Individuals who are completing or have recently completed a Master's degree
+        in Business or a related discipline.
+        Preferred Qualifications: Experience with creative products.
+        """
+        self.assertFalse(self.filter.allows_bachelors(details))
+
+    def test_accepts_bachelor_eligible_graduate_qualification(self) -> None:
+        details = """
+        Minimum Qualifications:
+        Individuals completing a Bachelor's degree or Master's degree in Business.
+        Preferred Qualifications: Experience with creative products.
+        """
+        self.assertTrue(self.filter.allows_bachelors(details))
 
 
 if __name__ == "__main__":
