@@ -20,7 +20,7 @@ The configuration monitors 32 company and job-network targets, including Google,
 - Retries temporary HTTP failures and checks sources concurrently.
 - Uses headless Chromium only for the few JavaScript-only searches; official JSON/HTML stays on the faster path.
 - Rejects empty JavaScript career shells instead of counting them as healthy job feeds.
-- Warns once per day after a source fails three consecutive checks.
+- Warns only after a source remains unavailable for six hours, then at most weekly during that outage.
 - Keeps undelivered roles pending if your phone notification provider is temporarily down.
 
 ## Quick start with Docker
@@ -99,7 +99,7 @@ Your computer must remain awake and connected. For genuine 24/7 coverage, run th
 
 ## Free cloud monitoring with GitHub Actions
 
-The included `.github/workflows/monitor.yml` runs one cloud check every five minutes on GitHub Actions. The repository may be public, but `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` must be stored as encrypted repository secrets under **Settings → Secrets and variables → Actions**. Never commit `.env`.
+Cloudflare dispatches the included `.github/workflows/monitor.yml` every five minutes, while GitHub's own schedule provides an hourly backup. The repository may be public, but `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` must be stored as encrypted repository secrets under **Settings → Secrets and variables → Actions**. Never commit `.env`.
 
 The workflow restores and saves the SQLite notification history through the Actions cache. Its first run establishes a silent baseline, then later runs alert only for newly discovered roles. Public-repository scheduled workflows may be disabled after 60 days without repository activity and should be checked periodically.
 

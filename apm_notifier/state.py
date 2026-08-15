@@ -1,10 +1,14 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from pathlib import Path
 import sqlite3
 
 from .models import Job, SourceResult, utc_now
+
+
+HEALTH_ALERT_AFTER = timedelta(hours=6)
+HEALTH_ALERT_REPEAT = timedelta(days=7)
 
 
 SCHEMA = """
@@ -33,7 +37,8 @@ CREATE TABLE IF NOT EXISTS source_health (
     consecutive_failures INTEGER NOT NULL DEFAULT 0,
     last_error TEXT NOT NULL DEFAULT '',
     last_match_count INTEGER NOT NULL DEFAULT 0,
-    health_alerted_at TEXT
+    health_alerted_at TEXT,
+    failure_started_at TEXT
 );
 """
 
@@ -44,7 +49,19 @@ class StateStore:
         self.connection = sqlite3.connect(path)
         self.connection.row_factory = sqlite3.Row
         self.connection.executescript(SCHEMA)
+        self._migrate_schema()
         self.connection.commit()
+
+    def _migrate_schema(self) -> None:
+        """Add health fields to notification histories created by older versions."""
+        columns = {
+            row["name"]
+            for row in self.connection.execute("PRAGMA table_info(source_health)").fetchall()
+        }
+        if "failure_started_at" not in columns:
+            self.connection.execute(
+                "ALTER TABLE source_health ADD COLUMN failure_started_at TEXT"
+            )
 
     def close(self) -> None:
         self.connection.close()
@@ -123,30 +140,42 @@ class StateStore:
         """Persist health and return True when a throttled health alert is due."""
         now = utc_now()
         previous = self.connection.execute(
-            "SELECT consecutive_failures, health_alerted_at FROM source_health WHERE source_id = ?",
+            """
+            SELECT consecutive_failures, health_alerted_at, failure_started_at
+            FROM source_health WHERE source_id = ?
+            """,
             (result.source.id,),
         ).fetchone()
         prior_failures = int(previous["consecutive_failures"]) if previous else 0
         previous_alert = previous["health_alerted_at"] if previous else None
+        previous_failure_start = previous["failure_started_at"] if previous else None
 
         if result.succeeded:
             failures = 0
             last_success = now
             last_error = "; ".join(result.errors)[:1000]
+            failure_started_at = None
+            previous_alert = None
         else:
             failures = prior_failures + 1
             last_success = None
             last_error = "; ".join(result.errors)[:1000] or "unknown source failure"
+            failure_started_at = previous_failure_start or now
 
-        should_alert = not result.succeeded and failures >= 3 and self._alert_is_due(previous_alert)
+        should_alert = (
+            not result.succeeded
+            and self._outage_is_long_enough(failure_started_at, now)
+            and self._alert_is_due(previous_alert, now)
+        )
         alerted_at = now if should_alert else previous_alert
         with self.connection:
             self.connection.execute(
                 """
                 INSERT INTO source_health(
                     source_id, source_name, last_checked_at, last_success_at,
-                    consecutive_failures, last_error, last_match_count, health_alerted_at
-                ) VALUES(?, ?, ?, ?, ?, ?, ?, ?)
+                    consecutive_failures, last_error, last_match_count, health_alerted_at,
+                    failure_started_at
+                ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(source_id) DO UPDATE SET
                     source_name = excluded.source_name,
                     last_checked_at = excluded.last_checked_at,
@@ -154,7 +183,8 @@ class StateStore:
                     consecutive_failures = excluded.consecutive_failures,
                     last_error = excluded.last_error,
                     last_match_count = excluded.last_match_count,
-                    health_alerted_at = excluded.health_alerted_at
+                    health_alerted_at = excluded.health_alerted_at,
+                    failure_started_at = excluded.failure_started_at
                 """,
                 (
                     result.source.id,
@@ -165,16 +195,24 @@ class StateStore:
                     last_error,
                     len(result.jobs),
                     alerted_at,
+                    failure_started_at,
                 ),
             )
         return should_alert
 
     @staticmethod
-    def _alert_is_due(previous_alert: str | None) -> bool:
+    def _outage_is_long_enough(failure_started_at: str, now: str) -> bool:
+        started = datetime.fromisoformat(failure_started_at)
+        checked = datetime.fromisoformat(now)
+        return checked - started >= HEALTH_ALERT_AFTER
+
+    @staticmethod
+    def _alert_is_due(previous_alert: str | None, now: str) -> bool:
         if not previous_alert:
             return True
         then = datetime.fromisoformat(previous_alert)
-        return datetime.now(timezone.utc) - then >= timedelta(hours=24)
+        checked = datetime.fromisoformat(now)
+        return checked - then >= HEALTH_ALERT_REPEAT
 
     def status_rows(self) -> tuple[sqlite3.Row, ...]:
         return tuple(

@@ -3,11 +3,31 @@ from __future__ import annotations
 from dataclasses import dataclass
 from html import escape
 import json
+import re
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 from .fetch import trusted_ssl_context
 from .models import Job, SourceResult
+
+
+def _health_error_summary(errors: tuple[str, ...]) -> str:
+    summaries: list[str] = []
+    for error in errors:
+        http_error = re.search(r"HTTP Error (\d+): ([^;]+)", error)
+        if http_error:
+            summary = f"HTTP {http_error.group(1)}: {http_error.group(2).strip()}"
+        elif "browser render" in error.casefold() and "timed out" in error.casefold():
+            summary = "Browser rendering timed out after retries"
+        elif "timed out" in error.casefold():
+            summary = "Network request timed out after retries"
+        elif "response contained no job records" in error.casefold():
+            summary = "Career page returned no readable job data"
+        else:
+            summary = re.sub(r"^https?://\S+\s*", "Career feed: ", error).strip()
+        if summary and summary not in summaries:
+            summaries.append(summary)
+    return "; ".join(summaries)[:400] or "Unknown career-feed error"
 
 
 @dataclass(frozen=True)
@@ -55,14 +75,19 @@ class NotificationManager:
         return self._send_all(telegram_text, plain_text, job.url, f"New role at {job.company}")
 
     def send_health(self, result: SourceResult) -> NotificationOutcome:
-        detail = "; ".join(result.errors) or "unknown error"
+        detail = _health_error_summary(result.errors)
         telegram_text = (
-            "⚠️ <b>APM Notifier source needs attention</b>\n\n"
-            f"<b>{escape(result.source.name)}</b> has failed at least 3 checks.\n"
-            f"{escape(detail[:800])}\n\n"
+            "⚠️ <b>APM Notifier coverage degraded</b>\n\n"
+            f"<b>{escape(result.source.name)}</b> has remained unavailable for at least 6 hours.\n"
+            "Monitoring and retries are continuing automatically. You do not need to do anything.\n\n"
+            f"Latest error: {escape(detail)}\n\n"
             f'<a href="{escape(result.source.career_url, quote=True)}">Open career page</a>'
         )
-        plain_text = f"{result.source.name} has failed at least 3 checks.\n{detail[:800]}"
+        plain_text = (
+            f"{result.source.name} has remained unavailable for at least 6 hours.\n"
+            "Monitoring continues automatically; no action is needed.\n"
+            f"Latest error: {detail}"
+        )
         return self._send_all(
             telegram_text,
             plain_text,

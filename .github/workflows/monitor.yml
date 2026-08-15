@@ -2,8 +2,8 @@ name: APM Notifier
 
 on:
   schedule:
-    # Offset from the top of the hour to reduce GitHub scheduler congestion.
-    - cron: "2-59/5 * * * *"
+    # Hourly backup; Cloudflare dispatches the primary check every five minutes.
+    - cron: "27 * * * *"
   workflow_dispatch:
     inputs:
       send_test_notification:
