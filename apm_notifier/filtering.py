@@ -23,8 +23,12 @@ PRODUCT_ROLE = re.compile(
 )
 MARKETING_ROLE = re.compile(r"\bmarketing\b", re.IGNORECASE)
 ENTRY_LEVEL_MARKETING = re.compile(
-    r"(?:\b(?:associate|specialist|coordinator|graduate)\b(?:\W+\w+){0,3}\W+marketing\b|"
-    r"\bmarketing\b(?:\W+\w+){0,3}\W+(?:associate|specialist|coordinator|graduate)\b)",
+    r"(?:\b(?:associate|analyst|specialist|coordinator|graduate)\b(?:\W+\w+){0,3}\W+marketing\b|"
+    r"\bmarketing\b(?:\W+\w+){0,3}\W+(?:associate|analyst|specialist|coordinator|graduate)\b)",
+    re.IGNORECASE,
+)
+NON_ENTRY_ADJACENT_MARKETING = re.compile(
+    r"\bassociate\s+manager\b|\b(?:sourcing|procurement)\b",
     re.IGNORECASE,
 )
 INTERNSHIP = re.compile(r"\b(?:intern(?:ship)?|co[ -]?op)\b", re.IGNORECASE)
@@ -238,6 +242,7 @@ class RoleFilter:
         internship = bool(INTERNSHIP.search(candidate) and PRODUCT_ROLE.search(candidate))
         adjacent_marketing = bool(
             include_adjacent_marketing
+            and not NON_ENTRY_ADJACENT_MARKETING.search(candidate)
             and (
                 (INTERNSHIP.search(candidate) and MARKETING_ROLE.search(candidate))
                 or ENTRY_LEVEL_MARKETING.search(candidate)

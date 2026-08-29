@@ -43,6 +43,7 @@ class RoleFilterTests(unittest.TestCase):
             "Marketing Intern — Summer 2027",
             "Partner Marketing Specialist",
             "Marketing Associate",
+            "Analyst, NA Growth Marketing",
             "Graduate Field Marketing Coordinator — 2027 Start",
         )
         for title in accepted:
@@ -53,6 +54,8 @@ class RoleFilterTests(unittest.TestCase):
         rejected = (
             "Marketing Intern — Spring 2027",
             "Senior Partner Marketing Specialist",
+            "Associate Manager, Integrated Marketing",
+            "Strategic Sourcing Specialist - Marketing",
             "Associate Managing Consultant, Advisors & Consulting Services, Marketing",
             "Product Marketing Manager",
         )

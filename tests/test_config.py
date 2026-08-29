@@ -32,6 +32,27 @@ class SaveEnvironmentTests(unittest.TestCase):
             sources = load_sources(path)
             self.assertTrue(sources[0].include_adjacent_marketing)
 
+    def test_requested_company_sources_are_enabled(self) -> None:
+        project_root = Path(__file__).resolve().parent.parent
+        sources = load_sources(project_root / "config" / "sources.json")
+        by_id = {source.id: source for source in sources}
+        requested = {
+            "autodesk-toronto",
+            "coinbase",
+            "doordash",
+            "duolingo",
+            "linkedin",
+            "lyft",
+            "reddit",
+            "snap",
+            "visa",
+            "zynga",
+            "nvidia",
+        }
+        self.assertTrue(requested <= by_id.keys())
+        self.assertTrue(all(by_id[source_id].include_adjacent_marketing for source_id in requested))
+        self.assertEqual(len(sources), 47)
+
 
 if __name__ == "__main__":
     unittest.main()

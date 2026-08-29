@@ -26,10 +26,14 @@
       "id": "amazon",
       "name": "Amazon",
       "career_url": "https://www.amazon.jobs/teams/internships-for-students",
+      "include_adjacent_marketing": true,
       "urls": [
         "https://www.amazon.jobs/en/search.json?base_query=product%20manager%20intern&loc_query=&offset=0&result_limit=100",
         "https://www.amazon.jobs/en/search.json?base_query=product%20marketing%20intern&loc_query=&offset=0&result_limit=100",
-        "https://www.amazon.jobs/en/search.json?base_query=associate%20product%20manager&loc_query=&offset=0&result_limit=100"
+        "https://www.amazon.jobs/en/search.json?base_query=associate%20product%20manager&loc_query=&offset=0&result_limit=100",
+        "https://www.amazon.jobs/en/search.json?base_query=marketing%20intern&loc_query=&offset=0&result_limit=100",
+        "https://www.amazon.jobs/en/search.json?base_query=marketing%20specialist&loc_query=&offset=0&result_limit=100",
+        "https://www.amazon.jobs/en/search.json?base_query=marketing%20analyst&loc_query=&offset=0&result_limit=100"
       ]
     },
     {
@@ -55,16 +59,21 @@
       "id": "ea",
       "name": "Electronic Arts (EA)",
       "career_url": "https://www.ea.com/careers/early-careers",
+      "include_adjacent_marketing": true,
       "urls": [
         "https://jobs.ea.com/en_US/careers/SearchJobs/?search=product%20manager%20intern",
         "https://jobs.ea.com/en_US/careers/SearchJobs/?search=product%20marketing%20intern",
-        "https://jobs.ea.com/en_US/careers/SearchJobs/?search=associate%20product%20manager"
+        "https://jobs.ea.com/en_US/careers/SearchJobs/?search=associate%20product%20manager",
+        "https://jobs.ea.com/en_US/careers/SearchJobs/?search=marketing%20intern",
+        "https://jobs.ea.com/en_US/careers/SearchJobs/?search=marketing%20specialist",
+        "https://jobs.ea.com/en_US/careers/SearchJobs/?search=marketing%20analyst"
       ]
     },
     {
       "id": "shopify",
       "name": "Shopify",
       "career_url": "https://www.shopify.com/careers/disciplines/product",
+      "include_adjacent_marketing": true,
       "urls": [
         "https://www.shopify.com/careers"
       ]
@@ -73,6 +82,7 @@
       "id": "instacart",
       "name": "Instacart",
       "career_url": "https://www.instacart.careers/apm",
+      "include_adjacent_marketing": true,
       "urls": [
         "https://api.greenhouse.io/v1/boards/instacart/jobs"
       ]
@@ -185,9 +195,354 @@
       ]
     },
     {
+      "id": "autodesk-toronto",
+      "name": "Autodesk (Toronto / Ontario)",
+      "career_url": "https://www.autodesk.com/careers/overview",
+      "include_adjacent_marketing": true,
+      "request_method": "POST",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "url_template": "https://autodesk.wd1.myworkdayjobs.com/Ext/{path}",
+      "urls": [
+        "https://autodesk.wd1.myworkdayjobs.com/wday/cxs/autodesk/Ext/jobs",
+        "https://autodesk.wd1.myworkdayjobs.com/wday/cxs/autodesk/Ext/jobs",
+        "https://autodesk.wd1.myworkdayjobs.com/wday/cxs/autodesk/Ext/jobs",
+        "https://autodesk.wd1.myworkdayjobs.com/wday/cxs/autodesk/Ext/jobs",
+        "https://autodesk.wd1.myworkdayjobs.com/wday/cxs/autodesk/Ext/jobs",
+        "https://autodesk.wd1.myworkdayjobs.com/wday/cxs/autodesk/Ext/jobs"
+      ],
+      "request_bodies": [
+        {
+          "appliedFacets": {
+            "State_Region": [
+              "218a720b28a74c67b5c6d42c00bdadfa"
+            ]
+          },
+          "limit": 20,
+          "offset": 0,
+          "searchText": "product manager intern"
+        },
+        {
+          "appliedFacets": {
+            "State_Region": [
+              "218a720b28a74c67b5c6d42c00bdadfa"
+            ]
+          },
+          "limit": 20,
+          "offset": 0,
+          "searchText": "associate product manager"
+        },
+        {
+          "appliedFacets": {
+            "State_Region": [
+              "218a720b28a74c67b5c6d42c00bdadfa"
+            ]
+          },
+          "limit": 20,
+          "offset": 0,
+          "searchText": "product marketing intern"
+        },
+        {
+          "appliedFacets": {
+            "State_Region": [
+              "218a720b28a74c67b5c6d42c00bdadfa"
+            ]
+          },
+          "limit": 20,
+          "offset": 0,
+          "searchText": "marketing intern"
+        },
+        {
+          "appliedFacets": {
+            "State_Region": [
+              "218a720b28a74c67b5c6d42c00bdadfa"
+            ]
+          },
+          "limit": 20,
+          "offset": 0,
+          "searchText": "marketing specialist"
+        },
+        {
+          "appliedFacets": {
+            "State_Region": [
+              "218a720b28a74c67b5c6d42c00bdadfa"
+            ]
+          },
+          "limit": 20,
+          "offset": 0,
+          "searchText": "marketing analyst"
+        }
+      ]
+    },
+    {
+      "id": "coinbase",
+      "name": "Coinbase",
+      "career_url": "https://www.coinbase.com/careers",
+      "include_adjacent_marketing": true,
+      "urls": [
+        "https://api.greenhouse.io/v1/boards/coinbase/jobs"
+      ]
+    },
+    {
+      "id": "doordash",
+      "name": "DoorDash",
+      "career_url": "https://careersatdoordash.com/job-search/",
+      "include_adjacent_marketing": true,
+      "urls": [
+        "https://api.greenhouse.io/v1/boards/doordashusa/jobs"
+      ]
+    },
+    {
+      "id": "duolingo",
+      "name": "Duolingo",
+      "career_url": "https://careers.duolingo.com/",
+      "include_adjacent_marketing": true,
+      "urls": [
+        "https://api.greenhouse.io/v1/boards/duolingo/jobs"
+      ]
+    },
+    {
+      "id": "linkedin",
+      "name": "LinkedIn",
+      "career_url": "https://careers.linkedin.com/",
+      "include_adjacent_marketing": true,
+      "urls": [
+        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=1337%2C9202023%2C2561065%2C2587638%2C290903%2C39939&keywords=product%20manager%20intern&start=0",
+        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=1337%2C9202023%2C2561065%2C2587638%2C290903%2C39939&keywords=associate%20product%20manager&start=0",
+        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=1337%2C9202023%2C2561065%2C2587638%2C290903%2C39939&keywords=product%20marketing%20intern&start=0",
+        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=1337%2C9202023%2C2561065%2C2587638%2C290903%2C39939&keywords=marketing%20intern&start=0",
+        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=1337%2C9202023%2C2561065%2C2587638%2C290903%2C39939&keywords=marketing%20specialist&start=0",
+        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=1337%2C9202023%2C2561065%2C2587638%2C290903%2C39939&keywords=marketing%20analyst&start=0"
+      ]
+    },
+    {
+      "id": "lyft",
+      "name": "Lyft",
+      "career_url": "https://www.lyft.com/careers",
+      "include_adjacent_marketing": true,
+      "urls": [
+        "https://api.greenhouse.io/v1/boards/lyft/jobs"
+      ]
+    },
+    {
+      "id": "reddit",
+      "name": "Reddit",
+      "career_url": "https://www.redditinc.com/careers",
+      "include_adjacent_marketing": true,
+      "urls": [
+        "https://api.greenhouse.io/v1/boards/reddit/jobs"
+      ]
+    },
+    {
+      "id": "snap",
+      "name": "Snap",
+      "career_url": "https://careers.snap.com/jobs",
+      "include_adjacent_marketing": true,
+      "urls": [
+        "https://careers.snap.com/api/jobs"
+      ]
+    },
+    {
+      "id": "visa",
+      "name": "Visa",
+      "career_url": "https://corporate.visa.com/en/careers.html",
+      "include_adjacent_marketing": true,
+      "request_method": "POST",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "url_template": "https://visa.wd5.myworkdayjobs.com/Visa/{path}",
+      "urls": [
+        "https://visa.wd5.myworkdayjobs.com/wday/cxs/visa/Visa/jobs",
+        "https://visa.wd5.myworkdayjobs.com/wday/cxs/visa/Visa/jobs",
+        "https://visa.wd5.myworkdayjobs.com/wday/cxs/visa/Visa/jobs",
+        "https://visa.wd5.myworkdayjobs.com/wday/cxs/visa/Visa/jobs",
+        "https://visa.wd5.myworkdayjobs.com/wday/cxs/visa/Visa/jobs",
+        "https://visa.wd5.myworkdayjobs.com/wday/cxs/visa/Visa/jobs"
+      ],
+      "request_bodies": [
+        {
+          "appliedFacets": {
+            "locationCountry": [
+              "a30a87ed25634629aa6c3958aa2b91ea",
+              "29247e57dbaf46fb855b224e03170bc7",
+              "bc33aa3152ec42d4995f4791a106ed09"
+            ]
+          },
+          "limit": 20,
+          "offset": 0,
+          "searchText": "product manager intern"
+        },
+        {
+          "appliedFacets": {
+            "locationCountry": [
+              "a30a87ed25634629aa6c3958aa2b91ea",
+              "29247e57dbaf46fb855b224e03170bc7",
+              "bc33aa3152ec42d4995f4791a106ed09"
+            ]
+          },
+          "limit": 20,
+          "offset": 0,
+          "searchText": "associate product manager"
+        },
+        {
+          "appliedFacets": {
+            "locationCountry": [
+              "a30a87ed25634629aa6c3958aa2b91ea",
+              "29247e57dbaf46fb855b224e03170bc7",
+              "bc33aa3152ec42d4995f4791a106ed09"
+            ]
+          },
+          "limit": 20,
+          "offset": 0,
+          "searchText": "product marketing intern"
+        },
+        {
+          "appliedFacets": {
+            "locationCountry": [
+              "a30a87ed25634629aa6c3958aa2b91ea",
+              "29247e57dbaf46fb855b224e03170bc7",
+              "bc33aa3152ec42d4995f4791a106ed09"
+            ]
+          },
+          "limit": 20,
+          "offset": 0,
+          "searchText": "marketing intern"
+        },
+        {
+          "appliedFacets": {
+            "locationCountry": [
+              "a30a87ed25634629aa6c3958aa2b91ea",
+              "29247e57dbaf46fb855b224e03170bc7",
+              "bc33aa3152ec42d4995f4791a106ed09"
+            ]
+          },
+          "limit": 20,
+          "offset": 0,
+          "searchText": "marketing specialist"
+        },
+        {
+          "appliedFacets": {
+            "locationCountry": [
+              "a30a87ed25634629aa6c3958aa2b91ea",
+              "29247e57dbaf46fb855b224e03170bc7",
+              "bc33aa3152ec42d4995f4791a106ed09"
+            ]
+          },
+          "limit": 20,
+          "offset": 0,
+          "searchText": "marketing analyst"
+        }
+      ]
+    },
+    {
+      "id": "zynga",
+      "name": "Zynga",
+      "career_url": "https://www.zynga.com/jobs/careers/",
+      "include_adjacent_marketing": true,
+      "urls": [
+        "https://api.greenhouse.io/v1/boards/zyngacareers/jobs"
+      ]
+    },
+    {
+      "id": "nvidia",
+      "name": "NVIDIA",
+      "career_url": "https://jobs.nvidia.com/",
+      "include_adjacent_marketing": true,
+      "request_method": "POST",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "url_template": "https://nvidia.wd5.myworkdayjobs.com/NVIDIAExternalCareerSite/{path}",
+      "urls": [
+        "https://nvidia.wd5.myworkdayjobs.com/wday/cxs/nvidia/NVIDIAExternalCareerSite/jobs",
+        "https://nvidia.wd5.myworkdayjobs.com/wday/cxs/nvidia/NVIDIAExternalCareerSite/jobs",
+        "https://nvidia.wd5.myworkdayjobs.com/wday/cxs/nvidia/NVIDIAExternalCareerSite/jobs",
+        "https://nvidia.wd5.myworkdayjobs.com/wday/cxs/nvidia/NVIDIAExternalCareerSite/jobs",
+        "https://nvidia.wd5.myworkdayjobs.com/wday/cxs/nvidia/NVIDIAExternalCareerSite/jobs",
+        "https://nvidia.wd5.myworkdayjobs.com/wday/cxs/nvidia/NVIDIAExternalCareerSite/jobs"
+      ],
+      "request_bodies": [
+        {
+          "appliedFacets": {
+            "locationHierarchy1": [
+              "2fcb99c455831013ea529c3b93ba3236",
+              "2fcb99c455831013ea52f785717432d2",
+              "2fcb99c455831013ea52fb338f2932d8"
+            ]
+          },
+          "limit": 20,
+          "offset": 0,
+          "searchText": "product manager intern"
+        },
+        {
+          "appliedFacets": {
+            "locationHierarchy1": [
+              "2fcb99c455831013ea529c3b93ba3236",
+              "2fcb99c455831013ea52f785717432d2",
+              "2fcb99c455831013ea52fb338f2932d8"
+            ]
+          },
+          "limit": 20,
+          "offset": 0,
+          "searchText": "associate product manager"
+        },
+        {
+          "appliedFacets": {
+            "locationHierarchy1": [
+              "2fcb99c455831013ea529c3b93ba3236",
+              "2fcb99c455831013ea52f785717432d2",
+              "2fcb99c455831013ea52fb338f2932d8"
+            ]
+          },
+          "limit": 20,
+          "offset": 0,
+          "searchText": "product marketing intern"
+        },
+        {
+          "appliedFacets": {
+            "locationHierarchy1": [
+              "2fcb99c455831013ea529c3b93ba3236",
+              "2fcb99c455831013ea52f785717432d2",
+              "2fcb99c455831013ea52fb338f2932d8"
+            ]
+          },
+          "limit": 20,
+          "offset": 0,
+          "searchText": "marketing intern"
+        },
+        {
+          "appliedFacets": {
+            "locationHierarchy1": [
+              "2fcb99c455831013ea529c3b93ba3236",
+              "2fcb99c455831013ea52f785717432d2",
+              "2fcb99c455831013ea52fb338f2932d8"
+            ]
+          },
+          "limit": 20,
+          "offset": 0,
+          "searchText": "marketing specialist"
+        },
+        {
+          "appliedFacets": {
+            "locationHierarchy1": [
+              "2fcb99c455831013ea529c3b93ba3236",
+              "2fcb99c455831013ea52f785717432d2",
+              "2fcb99c455831013ea52fb338f2932d8"
+            ]
+          },
+          "limit": 20,
+          "offset": 0,
+          "searchText": "marketing analyst"
+        }
+      ]
+    },
+    {
       "id": "airbnb",
       "name": "Airbnb",
       "career_url": "https://careers.airbnb.com/internship-programs/",
+      "include_adjacent_marketing": true,
       "urls": [
         "https://api.greenhouse.io/v1/boards/airbnb/jobs"
       ]
@@ -260,12 +615,16 @@
       "id": "adobe",
       "name": "Adobe",
       "career_url": "https://www.adobe.com/careers.html",
+      "include_adjacent_marketing": true,
       "request_method": "POST",
       "headers": {
         "Content-Type": "application/json"
       },
       "url_template": "https://adobe.wd5.myworkdayjobs.com/external_experienced/{path}",
       "urls": [
+        "https://adobe.wd5.myworkdayjobs.com/wday/cxs/adobe/external_experienced/jobs",
+        "https://adobe.wd5.myworkdayjobs.com/wday/cxs/adobe/external_experienced/jobs",
+        "https://adobe.wd5.myworkdayjobs.com/wday/cxs/adobe/external_experienced/jobs",
         "https://adobe.wd5.myworkdayjobs.com/wday/cxs/adobe/external_experienced/jobs",
         "https://adobe.wd5.myworkdayjobs.com/wday/cxs/adobe/external_experienced/jobs",
         "https://adobe.wd5.myworkdayjobs.com/wday/cxs/adobe/external_experienced/jobs"
@@ -288,6 +647,24 @@
           "limit": 20,
           "offset": 0,
           "searchText": "associate product manager"
+        },
+        {
+          "appliedFacets": {},
+          "limit": 20,
+          "offset": 0,
+          "searchText": "marketing intern"
+        },
+        {
+          "appliedFacets": {},
+          "limit": 20,
+          "offset": 0,
+          "searchText": "marketing specialist"
+        },
+        {
+          "appliedFacets": {},
+          "limit": 20,
+          "offset": 0,
+          "searchText": "marketing analyst"
         }
       ]
     },
@@ -334,6 +711,7 @@
       "id": "spotify",
       "name": "Spotify",
       "career_url": "https://www.lifeatspotify.com/",
+      "include_adjacent_marketing": true,
       "urls": [
         "https://api.lever.co/v0/postings/spotify?mode=json"
       ]
@@ -388,6 +766,7 @@
       "id": "block",
       "name": "Block / Square",
       "career_url": "https://block.xyz/careers",
+      "include_adjacent_marketing": true,
       "urls": [
         "https://api.greenhouse.io/v1/boards/block/jobs"
       ]
@@ -396,6 +775,7 @@
       "id": "robinhood",
       "name": "Robinhood",
       "career_url": "https://earlytalent.robinhood.com/",
+      "include_adjacent_marketing": true,
       "urls": [
         "https://api.greenhouse.io/v1/boards/robinhood/jobs"
       ]

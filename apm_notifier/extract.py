@@ -44,6 +44,8 @@ LOCATION_KEYS = (
     "locations",
     "locationsText",
     "locationName",
+    "primary_location",
+    "offices",
     "city",
     "categories",
     "PrimaryLocation",
@@ -239,7 +241,16 @@ def _jobs_from_markdown(text: str, source: Source, role_filter: RoleFilter) -> l
 
 
 JOB_COLLECTION_KEYS = frozenset(
-    {"jobs", "positions", "postings", "results", "jobPostings", "requisitionList", "content"}
+    {
+        "jobs",
+        "positions",
+        "postings",
+        "results",
+        "jobPostings",
+        "requisitionList",
+        "content",
+        "body",
+    }
 )
 ZERO_RESULT_MARKERS = (
     "no jobs found",
@@ -324,6 +335,8 @@ def response_has_job_signal(text: str, content_type: str) -> bool:
         return True
     if 'data-testid="job-card"' in lowered:
         return True
+    if "job-search-card" in lowered and "linkedin.com/jobs/view/" in lowered:
+        return True
     if "jobpostingswithjobs" in lowered and "__reactroutercontext" in lowered:
         return True
     if _google_result_rows(text) is not None:
@@ -351,6 +364,83 @@ def response_has_job_signal(text: str, content_type: str) -> bool:
         JOB_DETAIL_HREF.search(href) or NUMERIC_SEARCH_HREF.search(href)
         for href, _ in parser.anchors
     )
+
+
+class LinkedInJobCardParser(HTMLParser):
+    """Extract LinkedIn's own postings from the public guest-search cards."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.cards: list[tuple[str, str, str]] = []
+        self._depth = 0
+        self._href = ""
+        self._in_title = False
+        self._in_location = False
+        self._title_parts: list[str] = []
+        self._location_parts: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        attributes = {key.casefold(): value or "" for key, value in attrs}
+        classes = attributes.get("class", "").split()
+        if not self._depth and tag.casefold() == "div" and "job-search-card" in classes:
+            self._depth = 1
+            self._href = ""
+            self._title_parts = []
+            self._location_parts = []
+            return
+        if not self._depth:
+            return
+        if tag.casefold() == "div":
+            self._depth += 1
+        elif tag.casefold() == "a" and "base-card__full-link" in classes:
+            self._href = attributes.get("href", "")
+        elif tag.casefold() == "h3" and "base-search-card__title" in classes:
+            self._in_title = True
+        elif tag.casefold() == "span" and "job-search-card__location" in classes:
+            self._in_location = True
+
+    def handle_data(self, data: str) -> None:
+        if self._in_title:
+            self._title_parts.append(data)
+        if self._in_location:
+            self._location_parts.append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        if not self._depth:
+            return
+        if tag.casefold() == "h3" and self._in_title:
+            self._in_title = False
+        elif tag.casefold() == "span" and self._in_location:
+            self._in_location = False
+        elif tag.casefold() == "div":
+            self._depth -= 1
+            if self._depth == 0:
+                title = normalize_space(" ".join(self._title_parts))
+                location = normalize_space(" ".join(self._location_parts))
+                if self._href and title:
+                    self.cards.append((title, location, self._href))
+
+
+def _jobs_from_linkedin_cards(
+    text: str,
+    source: Source,
+    base_url: str,
+    role_filter: RoleFilter,
+) -> list[Job]:
+    parser = LinkedInJobCardParser()
+    parser.feed(text)
+    return [
+        Job(
+            source_id=source.id,
+            company=source.name,
+            title=title,
+            url=urljoin(base_url, href.split("?", 1)[0]),
+            location=location,
+        )
+        for title, location, href in parser.cards
+        if _matches_title(role_filter, title, source)
+        and role_filter.matches_location(location, title)
+    ]
 
 
 class YCJobCardParser(HTMLParser):
@@ -945,6 +1035,8 @@ def extract_jobs(
             jobs.extend(_jobs_from_ea_cards(text, source, base_url, role_filter))
         if "shopify.com/careers" in base_url:
             jobs.extend(_jobs_from_shopify_router(text, source, base_url, role_filter))
+        if "linkedin.com/jobs-guest/" in base_url:
+            jobs.extend(_jobs_from_linkedin_cards(text, source, base_url, role_filter))
         parser = CareerHTMLParser()
         parser.feed(text)
         for href, label in parser.anchors:
@@ -953,6 +1045,8 @@ def extract_jobs(
             if "jobs.ea.com" in base_url and "/jobdetail/" in href.casefold():
                 continue
             if "lifeattiktok.com" in base_url and NUMERIC_SEARCH_HREF.search(href):
+                continue
+            if "linkedin.com/jobs-guest/" in base_url and "/jobs/view/" in href:
                 continue
             title = label
             location = ""

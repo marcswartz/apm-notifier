@@ -459,6 +459,79 @@ class ExtractJobsTests(unittest.TestCase):
             "https://www.shopify.com/careers?ashby_jid=shopify-123",
         )
 
+    def test_extracts_linkedin_public_job_card_with_location(self) -> None:
+        source = Source(
+            id="linkedin",
+            name="LinkedIn",
+            urls=("https://www.linkedin.com/jobs-guest/jobs/api/search",),
+            career_url="https://careers.linkedin.com/",
+            include_adjacent_marketing=True,
+        )
+        html = """
+        <li>
+          <div class="base-search-card base-search-card--link job-search-card">
+            <a class="base-card__full-link" href="https://www.linkedin.com/jobs/view/marketing-analyst-at-linkedin-445?position=1&amp;trackingId=abc">
+              <span class="sr-only">Marketing Analyst — 2027</span>
+            </a>
+            <div class="base-search-card__info">
+              <h3 class="base-search-card__title">Marketing Analyst — 2027</h3>
+              <div class="base-search-card__metadata">
+                <span class="job-search-card__location">Toronto, Ontario, Canada</span>
+              </div>
+            </div>
+          </div>
+        </li>
+        """
+        self.assertTrue(response_has_job_signal(html, "text/html"))
+        jobs = extract_jobs(
+            html,
+            "text/html",
+            source,
+            source.urls[0],
+            self.filter,
+        )
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(jobs[0].location, "Toronto, Ontario, Canada")
+        self.assertEqual(
+            jobs[0].url,
+            "https://www.linkedin.com/jobs/view/marketing-analyst-at-linkedin-445",
+        )
+
+    def test_extracts_snap_nested_job_api(self) -> None:
+        source = Source(
+            id="snap",
+            name="Snap",
+            urls=("https://careers.snap.com/api/jobs",),
+            career_url="https://careers.snap.com/jobs",
+            include_adjacent_marketing=True,
+        )
+        payload = {
+            "body": [
+                {
+                    "_source": {
+                        "id": "R0047000",
+                        "title": "Marketing Intern — Summer 2027",
+                        "absolute_url": "https://wd1.myworkdaysite.com/recruiting/snapchat/snap/job/Toronto/Marketing-Intern_R0047000",
+                        "primary_location": "Toronto",
+                        "offices": [{"location": "Toronto, Canada"}],
+                    }
+                }
+            ],
+            "aggs": {},
+        }
+        encoded = json.dumps(payload)
+        self.assertTrue(response_has_job_signal(encoded, "application/json"))
+        jobs = extract_jobs(
+            encoded,
+            "application/json",
+            source,
+            source.urls[0],
+            self.filter,
+        )
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(jobs[0].location, "Toronto")
+        self.assertEqual(jobs[0].title, "Marketing Intern — Summer 2027")
+
     def test_extracts_google_init_data_without_browser_rendering(self) -> None:
         matching_row = [
             "123456789012345678",
