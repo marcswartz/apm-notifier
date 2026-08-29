@@ -195,6 +195,15 @@
       ]
     },
     {
+      "id": "adidas-canada",
+      "name": "Adidas (Canada)",
+      "career_url": "https://jobs.adidas-group.com/search/?locationsearch=Canada",
+      "include_adjacent_marketing": true,
+      "urls": [
+        "https://jobs.adidas-group.com/search/?locationsearch=Canada"
+      ]
+    },
+    {
       "id": "autodesk-toronto",
       "name": "Autodesk (Toronto / Ontario)",
       "career_url": "https://www.autodesk.com/careers/overview",
