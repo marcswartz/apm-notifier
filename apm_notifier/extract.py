@@ -43,6 +43,7 @@ LOCATION_KEYS = (
     "job_location",
     "locations",
     "locationsText",
+    "locationName",
     "city",
     "categories",
     "PrimaryLocation",
@@ -148,6 +149,13 @@ def _walk_json(value: Any) -> Iterable[dict[str, Any]]:
             yield from _walk_json(child)
 
 
+def _matches_title(role_filter: RoleFilter, title: str, source: Source) -> bool:
+    return role_filter.matches(
+        title,
+        include_adjacent_marketing=source.include_adjacent_marketing,
+    )
+
+
 def _jobs_from_json(
     payload: Any,
     source: Source,
@@ -157,7 +165,7 @@ def _jobs_from_json(
     jobs: list[Job] = []
     for item in _walk_json(payload):
         title = _first_string(item, TITLE_KEYS)
-        if not role_filter.matches(title):
+        if not _matches_title(role_filter, title, source):
             continue
         identifier = _first_string(item, ("id", "Id", "jobId", "job_id", "requisitionId"))
         raw_url = _first_string(item, URL_KEYS)
@@ -214,7 +222,7 @@ def _jobs_from_markdown(text: str, source: Source, role_filter: RoleFilter) -> l
         clean_company = _plain_markdown(company)
         clean_title = _plain_markdown(title)
         clean_location = _plain_markdown(location)
-        if not link or not role_filter.matches(clean_title):
+        if not link or not _matches_title(role_filter, clean_title, source):
             continue
         if not role_filter.matches_location(clean_location, clean_title):
             continue
@@ -334,6 +342,11 @@ def response_has_job_signal(text: str, content_type: str) -> bool:
         key in item for item in _walk_json(phenom_state) for key in JOB_COLLECTION_KEYS
     ):
         return True
+    ashby_state = _json_object_after(text, "window.__appData =")
+    if ashby_state is not None and any(
+        key in item for item in _walk_json(ashby_state) for key in JOB_COLLECTION_KEYS
+    ):
+        return True
     return any(
         JOB_DETAIL_HREF.search(href) or NUMERIC_SEARCH_HREF.search(href)
         for href, _ in parser.anchors
@@ -423,7 +436,8 @@ def _jobs_from_yc_cards(
             location=location,
         )
         for company, title, location, href in parser.cards
-        if role_filter.matches(title) and role_filter.matches_location(location, title)
+        if _matches_title(role_filter, title, source)
+        and role_filter.matches_location(location, title)
     ]
 
 
@@ -489,7 +503,8 @@ def _jobs_from_meta_cards(
             location=location,
         )
         for title, location, href in parser.cards
-        if role_filter.matches(title) and role_filter.matches_location(location, title)
+        if _matches_title(role_filter, title, source)
+        and role_filter.matches_location(location, title)
     ]
 
 
@@ -549,7 +564,8 @@ def _jobs_from_tiktok_cards(
             location=location,
         )
         for title, location, href in parser.cards
-        if role_filter.matches(title) and role_filter.matches_location(location, title)
+        if _matches_title(role_filter, title, source)
+        and role_filter.matches_location(location, title)
     ]
 
 
@@ -628,7 +644,7 @@ def _jobs_from_walmart_cards(
             (value for value in spans if role_filter.matches_location(value, title)),
             "",
         )
-        if not role_filter.matches(title) or not location:
+        if not _matches_title(role_filter, title, source) or not location:
             continue
         jobs.append(
             Job(
@@ -669,7 +685,7 @@ def _jobs_from_google_init_data(
                     if location:
                         locations.append(location)
         location_text = "; ".join(dict.fromkeys(locations))[:300]
-        if not identifier.isdigit() or not role_filter.matches(title):
+        if not identifier.isdigit() or not _matches_title(role_filter, title, source):
             continue
         if not role_filter.matches_location(location_text, title):
             continue
@@ -756,7 +772,8 @@ def _jobs_from_ea_cards(
             location=location,
         )
         for title, location, href in parser.cards
-        if role_filter.matches(title) and role_filter.matches_location(location, title)
+        if _matches_title(role_filter, title, source)
+        and role_filter.matches_location(location, title)
     ]
 
 
@@ -846,7 +863,9 @@ def _jobs_from_shopify_router(
         raw_url = _first_string(posting, ("externalLink", "applyLink"))
         if not title or not raw_url:
             continue
-        if not role_filter.matches(title) or not role_filter.matches_location(location, title):
+        if not _matches_title(role_filter, title, source) or not role_filter.matches_location(
+            location, title
+        ):
             continue
         jobs.append(
             Job(
@@ -942,7 +961,9 @@ def extract_jobs(
                 if microsoft_match:
                     title = normalize_space(microsoft_match.group("title"))
                     location = normalize_space(microsoft_match.group("location"))
-            if role_filter.matches(title) and role_filter.matches_location(location, title):
+            if _matches_title(role_filter, title, source) and role_filter.matches_location(
+                location, title
+            ):
                 jobs.append(
                     Job(
                         source_id=source.id,
@@ -968,6 +989,10 @@ def extract_jobs(
         phenom_state = _json_object_after(text, "phApp.ddo =")
         if phenom_state is not None:
             jobs.extend(_jobs_from_json(phenom_state, source, base_url, role_filter))
+
+        ashby_state = _json_object_after(text, "window.__appData =")
+        if ashby_state is not None:
+            jobs.extend(_jobs_from_json(ashby_state, source, base_url, role_filter))
 
     unique: dict[str, Job] = {}
     for job in jobs:

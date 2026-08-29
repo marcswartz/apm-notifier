@@ -49,6 +49,62 @@ class ExtractJobsTests(unittest.TestCase):
         self.assertEqual(jobs[0].location, "Toronto")
         self.assertEqual(jobs[0].url, "https://jobs.example.com/jobs/pm-7")
 
+    def test_extracts_opted_in_adjacent_marketing_role(self) -> None:
+        source = Source(
+            id="mastercard",
+            name="Mastercard",
+            urls=("https://careers.example.com/search",),
+            career_url="https://careers.example.com/",
+            include_adjacent_marketing=True,
+        )
+        payload = {
+            "jobs": [
+                {
+                    "title": "Partner Marketing Specialist",
+                    "applyUrl": "https://careers.example.com/jobs/R-288655",
+                    "location": "Toronto, Ontario, Canada",
+                }
+            ]
+        }
+        jobs = extract_jobs(
+            json.dumps(payload),
+            "application/json",
+            source,
+            "https://careers.example.com/search",
+            self.filter,
+        )
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(jobs[0].title, "Partner Marketing Specialist")
+
+    def test_extracts_ashby_embedded_job_board(self) -> None:
+        source = Source(
+            id="lime",
+            name="Lime",
+            urls=("https://jobs.ashbyhq.com/Lime?embed=js",),
+            career_url="https://www.li.me/about/careers",
+            url_template="https://jobs.ashbyhq.com/Lime/{id}",
+            include_adjacent_marketing=True,
+        )
+        html = """
+        <script>
+        window.__appData = {"jobBoard":{"jobPostings":[
+          {"id":"lime-123","title":"Marketing Intern — Summer 2027",
+           "locationName":"Toronto, Canada"}
+        ]}};
+        </script>
+        """
+        self.assertTrue(response_has_job_signal(html, "text/html"))
+        jobs = extract_jobs(
+            html,
+            "text/html",
+            source,
+            "https://jobs.ashbyhq.com/Lime?embed=js",
+            self.filter,
+        )
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(jobs[0].location, "Toronto, Canada")
+        self.assertEqual(jobs[0].url, "https://jobs.ashbyhq.com/Lime/lime-123")
+
     def test_extracts_microsoft_positions_api_job(self) -> None:
         payload = {
             "data": {

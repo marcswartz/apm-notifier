@@ -31,11 +31,34 @@ class RoleFilterTests(unittest.TestCase):
             "Software Engineering Intern",
             "Associate Project Manager",
             "Product Manager Intern — Summer 2026",
+            "Product Marketing Intern — Winter 2027",
             "Director, Associate Product Manager Program",
         )
         for title in rejected:
             with self.subTest(title=title):
                 self.assertFalse(self.filter.matches(title))
+
+    def test_adjacent_marketing_is_opt_in_and_limited_to_early_career(self) -> None:
+        accepted = (
+            "Marketing Intern — Summer 2027",
+            "Partner Marketing Specialist",
+            "Marketing Associate",
+            "Graduate Field Marketing Coordinator — 2027 Start",
+        )
+        for title in accepted:
+            with self.subTest(title=title):
+                self.assertFalse(self.filter.matches(title))
+                self.assertTrue(self.filter.matches(title, include_adjacent_marketing=True))
+
+        rejected = (
+            "Marketing Intern — Spring 2027",
+            "Senior Partner Marketing Specialist",
+            "Associate Managing Consultant, Advisors & Consulting Services, Marketing",
+            "Product Marketing Manager",
+        )
+        for title in rejected:
+            with self.subTest(title=title):
+                self.assertFalse(self.filter.matches(title, include_adjacent_marketing=True))
 
     def test_accepts_allowed_locations(self) -> None:
         accepted = (

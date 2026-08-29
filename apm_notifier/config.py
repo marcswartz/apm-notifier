@@ -165,6 +165,7 @@ def load_sources(path: Path) -> tuple[Source, ...]:
                 request_bodies=request_bodies,
                 verify_job_links=bool(item.get("verify_job_links", False)),
                 verify_graduate_education=bool(item.get("verify_graduate_education", False)),
+                include_adjacent_marketing=bool(item.get("include_adjacent_marketing", False)),
             )
         )
     return tuple(source for source in sources if source.enabled)

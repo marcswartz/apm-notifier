@@ -21,6 +21,12 @@ PRODUCT_ROLE = re.compile(
     r"growth\s+product\s+manager|product\s+marketing(?:\s+manager)?)\b",
     re.IGNORECASE,
 )
+MARKETING_ROLE = re.compile(r"\bmarketing\b", re.IGNORECASE)
+ENTRY_LEVEL_MARKETING = re.compile(
+    r"(?:\b(?:associate|specialist|coordinator|graduate)\b(?:\W+\w+){0,3}\W+marketing\b|"
+    r"\bmarketing\b(?:\W+\w+){0,3}\W+(?:associate|specialist|coordinator|graduate)\b)",
+    re.IGNORECASE,
+)
 INTERNSHIP = re.compile(r"\b(?:intern(?:ship)?|co[ -]?op)\b", re.IGNORECASE)
 PRODUCT_DEVELOPMENT_PROGRAM = re.compile(
     r"\bproduct\s+development\s+internship\s+program\b",
@@ -30,6 +36,8 @@ NEGATIVE_SENIORITY = re.compile(
     r"\b(?:senior|sr\.?|staff|principal|director|head|vice president|vp)\b",
     re.IGNORECASE,
 )
+NON_SUMMER_TERM = re.compile(r"\b(?:fall|autumn|winter|spring)\b", re.IGNORECASE)
+SUMMER_TERM = re.compile(r"\bsummer\b", re.IGNORECASE)
 MASTERS_REQUIRED = re.compile(
     r"\b(?:completing|completed|pursuing|hold(?:ing)?|have)\b.{0,100}"
     r"\bmaster(?:'s|s)?\s+degree\b|"
@@ -213,7 +221,7 @@ class RoleFilter:
         if not self.allowed_countries:
             raise ValueError("ALLOWED_COUNTRIES must contain at least one country")
 
-    def matches(self, title: str) -> bool:
+    def matches(self, title: str, include_adjacent_marketing: bool = False) -> bool:
         candidate = normalize_space(title)
         if len(candidate) < 5 or len(candidate) > 220:
             return False
@@ -221,13 +229,27 @@ class RoleFilter:
         years = {int(value) for value in re.findall(r"\b20\d{2}\b", candidate)}
         if years & self.excluded_years and self.target_year not in years:
             return False
+        if NON_SUMMER_TERM.search(candidate) and not SUMMER_TERM.search(candidate):
+            return False
 
         early_career = bool(
             EXPLICIT_EARLY_CAREER.search(candidate) or GRADUATE_PRODUCT_MANAGER.search(candidate)
         )
         internship = bool(INTERNSHIP.search(candidate) and PRODUCT_ROLE.search(candidate))
+        adjacent_marketing = bool(
+            include_adjacent_marketing
+            and (
+                (INTERNSHIP.search(candidate) and MARKETING_ROLE.search(candidate))
+                or ENTRY_LEVEL_MARKETING.search(candidate)
+            )
+        )
         product_development_program = bool(PRODUCT_DEVELOPMENT_PROGRAM.search(candidate))
-        if not early_career and not internship and not product_development_program:
+        if (
+            not early_career
+            and not internship
+            and not adjacent_marketing
+            and not product_development_program
+        ):
             return False
 
         if NEGATIVE_SENIORITY.search(candidate) and not INTERNSHIP.search(candidate):

@@ -89,6 +89,7 @@
       "id": "stripe",
       "name": "Stripe",
       "career_url": "https://stripe.com/jobs/university",
+      "include_adjacent_marketing": true,
       "urls": [
         "https://api.greenhouse.io/v1/boards/stripe/jobs"
       ]
@@ -97,9 +98,53 @@
       "id": "uber",
       "name": "Uber",
       "career_url": "https://www.uber.com/us/en/careers/apm/",
+      "include_adjacent_marketing": true,
       "urls": [
         "https://www.uber.com/us/en/careers/list/?query=product%20manager%20intern",
-        "https://www.uber.com/us/en/careers/list/?query=associate%20product%20manager"
+        "https://www.uber.com/us/en/careers/list/?query=associate%20product%20manager",
+        "https://www.uber.com/us/en/careers/list/?query=product%20marketing%20intern",
+        "https://www.uber.com/us/en/careers/list/?query=marketing%20intern"
+      ]
+    },
+    {
+      "id": "mastercard",
+      "name": "Mastercard",
+      "career_url": "https://careers.mastercard.com/us/en/",
+      "include_adjacent_marketing": true,
+      "urls": [
+        "https://careers.mastercard.com/us/en/search-results?keywords=product%20manager%20intern",
+        "https://careers.mastercard.com/us/en/search-results?keywords=associate%20product%20manager",
+        "https://careers.mastercard.com/us/en/search-results?keywords=product%20marketing%20intern",
+        "https://careers.mastercard.com/us/en/search-results?keywords=marketing%20intern",
+        "https://careers.mastercard.com/us/en/search-results?keywords=marketing%20specialist"
+      ]
+    },
+    {
+      "id": "wealthsimple",
+      "name": "Wealthsimple",
+      "career_url": "https://www.wealthsimple.com/en-ca/careers",
+      "include_adjacent_marketing": true,
+      "urls": [
+        "https://api.ashbyhq.com/posting-api/job-board/wealthsimple"
+      ]
+    },
+    {
+      "id": "openai",
+      "name": "OpenAI",
+      "career_url": "https://openai.com/careers/search/",
+      "include_adjacent_marketing": true,
+      "urls": [
+        "https://api.ashbyhq.com/posting-api/job-board/openai"
+      ]
+    },
+    {
+      "id": "lime",
+      "name": "Lime",
+      "career_url": "https://www.li.me/about/careers",
+      "include_adjacent_marketing": true,
+      "url_template": "https://jobs.ashbyhq.com/Lime/{id}",
+      "urls": [
+        "https://jobs.ashbyhq.com/Lime?embed=js"
       ]
     },
     {

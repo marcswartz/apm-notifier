@@ -3,7 +3,7 @@ import stat
 import tempfile
 import unittest
 
-from apm_notifier.config import save_env_values
+from apm_notifier.config import load_sources, save_env_values
 
 
 class SaveEnvironmentTests(unittest.TestCase):
@@ -19,6 +19,18 @@ class SaveEnvironmentTests(unittest.TestCase):
                 "TOKEN=secret\nUNCHANGED=yes\n\nCHAT_ID=123\n",
             )
             self.assertEqual(stat.S_IMODE(target.stat().st_mode), 0o600)
+
+    def test_loads_adjacent_marketing_source_option(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "sources.json"
+            path.write_text(
+                '{"sources":[{"id":"example","name":"Example",'
+                '"urls":["https://jobs.example.com"],'
+                '"include_adjacent_marketing":true}]}',
+                encoding="utf-8",
+            )
+            sources = load_sources(path)
+            self.assertTrue(sources[0].include_adjacent_marketing)
 
 
 if __name__ == "__main__":

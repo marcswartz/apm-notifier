@@ -56,6 +56,7 @@ class Source:
     request_bodies: tuple[str, ...] = ()
     verify_job_links: bool = False
     verify_graduate_education: bool = False
+    include_adjacent_marketing: bool = False
 
 
 @dataclass(frozen=True)
