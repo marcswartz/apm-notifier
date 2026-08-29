@@ -37,8 +37,7 @@ class SaveEnvironmentTests(unittest.TestCase):
         sources = load_sources(project_root / "config" / "sources.json")
         by_id = {source.id: source for source in sources}
         requested = {
-            "adidas-canada",
-            "autodesk-toronto",
+            "autodesk-canada",
             "coinbase",
             "doordash",
             "duolingo",
@@ -53,9 +52,13 @@ class SaveEnvironmentTests(unittest.TestCase):
         self.assertTrue(requested <= by_id.keys())
         self.assertTrue(all(by_id[source_id].include_adjacent_marketing for source_id in requested))
         self.assertTrue(
-            all("locationsearch=Canada" in url for url in by_id["adidas-canada"].urls)
+            all(
+                '"locationCountry":["a30a87ed25634629aa6c3958aa2b91ea"]' in body
+                for body in by_id["autodesk-canada"].request_bodies
+            )
         )
-        self.assertEqual(len(sources), 48)
+        self.assertNotIn("adidas-canada", by_id)
+        self.assertEqual(len(sources), 47)
 
 
 if __name__ == "__main__":

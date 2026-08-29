@@ -867,79 +867,6 @@ def _jobs_from_ea_cards(
     ]
 
 
-class AdidasJobCardParser(HTMLParser):
-    """Extract Adidas SuccessFactors rows without losing the Canadian city."""
-
-    def __init__(self) -> None:
-        super().__init__(convert_charrefs=True)
-        self.cards: list[tuple[str, str, str]] = []
-        self._in_row = False
-        self._in_title = False
-        self._in_location_cell = False
-        self._href = ""
-        self._title_parts: list[str] = []
-        self._location_parts: list[str] = []
-
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        attributes = {key.casefold(): value or "" for key, value in attrs}
-        classes = attributes.get("class", "").split()
-        if tag.casefold() == "tr" and "data-row" in classes:
-            self._in_row = True
-            self._href = ""
-            self._title_parts = []
-            self._location_parts = []
-        elif (
-            self._in_row
-            and not self._href
-            and tag.casefold() == "a"
-            and "jobTitle-link" in classes
-        ):
-            self._href = attributes.get("href", "")
-            self._in_title = True
-        elif self._in_row and tag.casefold() == "td" and "colLocation" in classes:
-            self._in_location_cell = True
-
-    def handle_data(self, data: str) -> None:
-        if self._in_title:
-            self._title_parts.append(data)
-        if self._in_location_cell:
-            self._location_parts.append(data)
-
-    def handle_endtag(self, tag: str) -> None:
-        if tag.casefold() == "a" and self._in_title:
-            self._in_title = False
-        elif tag.casefold() == "td" and self._in_location_cell:
-            self._in_location_cell = False
-        elif tag.casefold() == "tr" and self._in_row:
-            title = normalize_space(" ".join(self._title_parts))
-            location = normalize_space(" ".join(self._location_parts))
-            if self._href and title:
-                self.cards.append((title, location, self._href))
-            self._in_row = False
-
-
-def _jobs_from_adidas_cards(
-    text: str,
-    source: Source,
-    base_url: str,
-    role_filter: RoleFilter,
-) -> list[Job]:
-    parser = AdidasJobCardParser()
-    parser.feed(text)
-    return [
-        Job(
-            source_id=source.id,
-            company=source.name,
-            title=title,
-            url=urljoin(base_url, href),
-            location=location,
-        )
-        for title, location, href in parser.cards
-        if _matches_title(role_filter, title, source)
-        and role_filter.matches_location(location, title)
-    ]
-
-
 SHOPIFY_ROUTER_CHUNK = re.compile(
     r'window\.__reactRouterContext\.streamController\.enqueue\(("(?:\\.|[^"\\])*")\);'
 )
@@ -1106,8 +1033,6 @@ def extract_jobs(
             jobs.extend(_jobs_from_google_init_data(text, source, role_filter))
         if "jobs.ea.com" in base_url:
             jobs.extend(_jobs_from_ea_cards(text, source, base_url, role_filter))
-        if "jobs.adidas-group.com" in base_url:
-            jobs.extend(_jobs_from_adidas_cards(text, source, base_url, role_filter))
         if "shopify.com/careers" in base_url:
             jobs.extend(_jobs_from_shopify_router(text, source, base_url, role_filter))
         if "linkedin.com/jobs-guest/" in base_url:
@@ -1118,8 +1043,6 @@ def extract_jobs(
             if "metacareers.com" in base_url and "/profile/job_details/" in href:
                 continue
             if "jobs.ea.com" in base_url and "/jobdetail/" in href.casefold():
-                continue
-            if "jobs.adidas-group.com" in base_url and "/job/" in href.casefold():
                 continue
             if "lifeattiktok.com" in base_url and NUMERIC_SEARCH_HREF.search(href):
                 continue

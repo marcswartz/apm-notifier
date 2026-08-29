@@ -195,18 +195,9 @@
       ]
     },
     {
-      "id": "adidas-canada",
-      "name": "Adidas (Canada)",
-      "career_url": "https://jobs.adidas-group.com/search/?locationsearch=Canada",
-      "include_adjacent_marketing": true,
-      "urls": [
-        "https://jobs.adidas-group.com/search/?locationsearch=Canada"
-      ]
-    },
-    {
-      "id": "autodesk-toronto",
-      "name": "Autodesk (Toronto / Ontario)",
-      "career_url": "https://www.autodesk.com/careers/overview",
+      "id": "autodesk-canada",
+      "name": "Autodesk (Canada)",
+      "career_url": "https://autodesk.wd1.myworkdayjobs.com/Ext?locationCountry=a30a87ed25634629aa6c3958aa2b91ea",
       "include_adjacent_marketing": true,
       "request_method": "POST",
       "headers": {
@@ -224,8 +215,8 @@
       "request_bodies": [
         {
           "appliedFacets": {
-            "State_Region": [
-              "218a720b28a74c67b5c6d42c00bdadfa"
+            "locationCountry": [
+              "a30a87ed25634629aa6c3958aa2b91ea"
             ]
           },
           "limit": 20,
@@ -234,8 +225,8 @@
         },
         {
           "appliedFacets": {
-            "State_Region": [
-              "218a720b28a74c67b5c6d42c00bdadfa"
+            "locationCountry": [
+              "a30a87ed25634629aa6c3958aa2b91ea"
             ]
           },
           "limit": 20,
@@ -244,8 +235,8 @@
         },
         {
           "appliedFacets": {
-            "State_Region": [
-              "218a720b28a74c67b5c6d42c00bdadfa"
+            "locationCountry": [
+              "a30a87ed25634629aa6c3958aa2b91ea"
             ]
           },
           "limit": 20,
@@ -254,8 +245,8 @@
         },
         {
           "appliedFacets": {
-            "State_Region": [
-              "218a720b28a74c67b5c6d42c00bdadfa"
+            "locationCountry": [
+              "a30a87ed25634629aa6c3958aa2b91ea"
             ]
           },
           "limit": 20,
@@ -264,8 +255,8 @@
         },
         {
           "appliedFacets": {
-            "State_Region": [
-              "218a720b28a74c67b5c6d42c00bdadfa"
+            "locationCountry": [
+              "a30a87ed25634629aa6c3958aa2b91ea"
             ]
           },
           "limit": 20,
@@ -274,8 +265,8 @@
         },
         {
           "appliedFacets": {
-            "State_Region": [
-              "218a720b28a74c67b5c6d42c00bdadfa"
+            "locationCountry": [
+              "a30a87ed25634629aa6c3958aa2b91ea"
             ]
           },
           "limit": 20,

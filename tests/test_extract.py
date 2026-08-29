@@ -497,42 +497,6 @@ class ExtractJobsTests(unittest.TestCase):
             "https://www.linkedin.com/jobs/view/marketing-analyst-at-linkedin-445",
         )
 
-    def test_extracts_adidas_canada_job_row_with_montreal_location(self) -> None:
-        source = Source(
-            id="adidas-canada",
-            name="Adidas (Canada)",
-            urls=("https://jobs.adidas-group.com/search/?locationsearch=Canada",),
-            career_url="https://jobs.adidas-group.com/search/?locationsearch=Canada",
-            include_adjacent_marketing=True,
-        )
-        html = """
-        <table><tbody>
-          <tr class="data-row">
-            <td class="colTitle" headers="hdrTitle">
-              <span class="jobTitle hidden-phone">
-                <a href="/job/Montreal-Marketing-Intern-Summer-2027/123456/"
-                   class="jobTitle-link">Marketing Intern — Summer 2027</a>
-              </span>
-              <div class="jobdetail-phone visible-phone">
-                <a class="jobTitle-link"
-                   href="/job/Montreal-Marketing-Intern-Summer-2027/123456/">Marketing Intern — Summer 2027</a>
-              </div>
-            </td>
-            <td class="colLocation hidden-phone" headers="hdrLocation">
-              <span class="jobLocation">Montreal, CA</span>
-            </td>
-          </tr>
-        </tbody></table>
-        """
-        self.assertTrue(response_has_job_signal(html, "text/html"))
-        jobs = extract_jobs(html, "text/html", source, source.urls[0], self.filter)
-        self.assertEqual(len(jobs), 1)
-        self.assertEqual(jobs[0].location, "Montreal, CA")
-        self.assertEqual(
-            jobs[0].url,
-            "https://jobs.adidas-group.com/job/Montreal-Marketing-Intern-Summer-2027/123456/",
-        )
-
     def test_extracts_snap_nested_job_api(self) -> None:
         source = Source(
             id="snap",
