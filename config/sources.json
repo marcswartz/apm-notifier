@@ -111,12 +111,49 @@
       "name": "Mastercard",
       "career_url": "https://careers.mastercard.com/us/en/",
       "include_adjacent_marketing": true,
+      "request_method": "POST",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "url_template": "https://mastercard.wd1.myworkdayjobs.com/CorporateCareers/{path}",
       "urls": [
-        "https://careers.mastercard.com/us/en/search-results?keywords=product%20manager%20intern",
-        "https://careers.mastercard.com/us/en/search-results?keywords=associate%20product%20manager",
-        "https://careers.mastercard.com/us/en/search-results?keywords=product%20marketing%20intern",
-        "https://careers.mastercard.com/us/en/search-results?keywords=marketing%20intern",
-        "https://careers.mastercard.com/us/en/search-results?keywords=marketing%20specialist"
+        "https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/jobs",
+        "https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/jobs",
+        "https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/jobs",
+        "https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/jobs",
+        "https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/jobs"
+      ],
+      "request_bodies": [
+        {
+          "appliedFacets": {},
+          "limit": 20,
+          "offset": 0,
+          "searchText": "product manager intern"
+        },
+        {
+          "appliedFacets": {},
+          "limit": 20,
+          "offset": 0,
+          "searchText": "associate product manager"
+        },
+        {
+          "appliedFacets": {},
+          "limit": 20,
+          "offset": 0,
+          "searchText": "product marketing intern"
+        },
+        {
+          "appliedFacets": {},
+          "limit": 20,
+          "offset": 0,
+          "searchText": "marketing intern"
+        },
+        {
+          "appliedFacets": {},
+          "limit": 20,
+          "offset": 0,
+          "searchText": "marketing specialist"
+        }
       ]
     },
     {
