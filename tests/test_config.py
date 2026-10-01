@@ -32,6 +32,18 @@ class SaveEnvironmentTests(unittest.TestCase):
             sources = load_sources(path)
             self.assertTrue(sources[0].include_adjacent_marketing)
 
+    def test_loads_growth_product_source_option(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "sources.json"
+            path.write_text(
+                '{"sources":[{"id":"example","name":"Example",'
+                '"urls":["https://jobs.example.com"],'
+                '"include_growth_product_roles":true}]}',
+                encoding="utf-8",
+            )
+            sources = load_sources(path)
+            self.assertTrue(sources[0].include_growth_product_roles)
+
     def test_requested_company_sources_are_enabled(self) -> None:
         project_root = Path(__file__).resolve().parent.parent
         sources = load_sources(project_root / "config" / "sources.json")
@@ -48,6 +60,8 @@ class SaveEnvironmentTests(unittest.TestCase):
             "visa",
             "zynga",
             "nvidia",
+            "anthropic",
+            "openai",
         }
         self.assertTrue(requested <= by_id.keys())
         self.assertTrue(all(by_id[source_id].include_adjacent_marketing for source_id in requested))
@@ -58,7 +72,9 @@ class SaveEnvironmentTests(unittest.TestCase):
             )
         )
         self.assertNotIn("adidas-canada", by_id)
-        self.assertEqual(len(sources), 47)
+        self.assertTrue(by_id["anthropic"].include_growth_product_roles)
+        self.assertTrue(by_id["openai"].include_growth_product_roles)
+        self.assertEqual(len(sources), 48)
 
 
 if __name__ == "__main__":

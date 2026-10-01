@@ -180,8 +180,19 @@
       "name": "OpenAI",
       "career_url": "https://openai.com/careers/search/",
       "include_adjacent_marketing": true,
+      "include_growth_product_roles": true,
       "urls": [
         "https://api.ashbyhq.com/posting-api/job-board/openai"
+      ]
+    },
+    {
+      "id": "anthropic",
+      "name": "Anthropic",
+      "career_url": "https://www.anthropic.com/careers/jobs",
+      "include_adjacent_marketing": true,
+      "include_growth_product_roles": true,
+      "urls": [
+        "https://api.greenhouse.io/v1/boards/anthropic/jobs"
       ]
     },
     {

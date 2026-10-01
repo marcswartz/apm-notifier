@@ -57,6 +57,7 @@ class Source:
     verify_job_links: bool = False
     verify_graduate_education: bool = False
     include_adjacent_marketing: bool = False
+    include_growth_product_roles: bool = False
 
 
 @dataclass(frozen=True)

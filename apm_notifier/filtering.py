@@ -21,6 +21,11 @@ PRODUCT_ROLE = re.compile(
     r"growth\s+product\s+manager|product\s+marketing(?:\s+manager)?)\b",
     re.IGNORECASE,
 )
+GROWTH_PRODUCT_MANAGER = re.compile(
+    r"(?:\bgrowth\b.{0,60}\bproduct\s+manager\b|"
+    r"\bproduct\s+manager\b.{0,60}\bgrowth\b)",
+    re.IGNORECASE,
+)
 MARKETING_ROLE = re.compile(r"\bmarketing\b", re.IGNORECASE)
 ENTRY_LEVEL_MARKETING = re.compile(
     r"(?:\b(?:associate|analyst|specialist|coordinator|graduate)\b(?:\W+\w+){0,3}\W+marketing\b|"
@@ -225,7 +230,12 @@ class RoleFilter:
         if not self.allowed_countries:
             raise ValueError("ALLOWED_COUNTRIES must contain at least one country")
 
-    def matches(self, title: str, include_adjacent_marketing: bool = False) -> bool:
+    def matches(
+        self,
+        title: str,
+        include_adjacent_marketing: bool = False,
+        include_growth_product_roles: bool = False,
+    ) -> bool:
         candidate = normalize_space(title)
         if len(candidate) < 5 or len(candidate) > 220:
             return False
@@ -249,11 +259,15 @@ class RoleFilter:
             )
         )
         product_development_program = bool(PRODUCT_DEVELOPMENT_PROGRAM.search(candidate))
+        growth_product_role = bool(
+            include_growth_product_roles and GROWTH_PRODUCT_MANAGER.search(candidate)
+        )
         if (
             not early_career
             and not internship
             and not adjacent_marketing
             and not product_development_program
+            and not growth_product_role
         ):
             return False
 

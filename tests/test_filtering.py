@@ -38,6 +38,26 @@ class RoleFilterTests(unittest.TestCase):
             with self.subTest(title=title):
                 self.assertFalse(self.filter.matches(title))
 
+    def test_growth_product_roles_are_opt_in_for_selected_companies(self) -> None:
+        accepted = (
+            "Growth Product Manager",
+            "Product Manager, Growth",
+            "Product Manager, Multi-Cloud Growth - Google",
+        )
+        for title in accepted:
+            with self.subTest(title=title):
+                self.assertFalse(self.filter.matches(title))
+                self.assertTrue(
+                    self.filter.matches(title, include_growth_product_roles=True)
+                )
+
+        self.assertFalse(
+            self.filter.matches(
+                "Senior Growth Product Manager",
+                include_growth_product_roles=True,
+            )
+        )
+
     def test_adjacent_marketing_is_opt_in_and_limited_to_early_career(self) -> None:
         accepted = (
             "Marketing Intern — Summer 2027",

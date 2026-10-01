@@ -6,11 +6,12 @@ APM Notifier watches official company career searches and sends a one-time phone
 - Bachelor-eligible Graduate Product Manager role
 - Product Manager / Product Management internship or co-op
 - Technical or Growth Product Manager internship
+- Non-senior Growth Product Manager roles at Anthropic and OpenAI
 - Product Marketing or Product Marketing Manager internship
 - Summer marketing internships and junior marketing associate/analyst/specialist/coordinator roles
   at the requested companies
 
-The configuration monitors 47 company and job-network targets, including Google, Meta, Amazon, Microsoft, Apple, TikTok, Autodesk Canada-wide, Coinbase, DoorDash, Duolingo, Electronic Arts, Instacart, LinkedIn, Lyft, Reddit, Robinhood, Shopify, Snap, Spotify, Square/Block, Visa, Zynga, NVIDIA, Mastercard, Wealthsimple, OpenAI, Lime, Stripe, Uber, Airbnb, Adobe, and several others. Wellfound is present but disabled because its job pages require an interactive session. A separate US-wide [Summer 2027 community tracker](https://github.com/sndsh404/summer-2027-internships) is monitored as an independent back-check, so matching roles from companies outside that fixed list can also be detected. The original target list was seeded from the [Extern Summer 2027 PM guide](https://www.extern.com/post/product-management-internships-summer-2027-guide).
+The configuration monitors 48 company and job-network targets, including Google, Meta, Amazon, Microsoft, Apple, TikTok, Autodesk Canada-wide, Anthropic, Coinbase, DoorDash, Duolingo, Electronic Arts, Instacart, LinkedIn, Lyft, Reddit, Robinhood, Shopify, Snap, Spotify, Square/Block, Visa, Zynga, NVIDIA, Mastercard, Wealthsimple, OpenAI, Lime, Stripe, Uber, Airbnb, Adobe, and several others. Wellfound is present but disabled because its job pages require an interactive session. A separate US-wide [Summer 2027 community tracker](https://github.com/sndsh404/summer-2027-internships) is monitored as an independent back-check, so matching roles from companies outside that fixed list can also be detected. The original target list was seeded from the [Extern Summer 2027 PM guide](https://www.extern.com/post/product-management-internships-summer-2027-guide).
 
 ## What it does
 
@@ -19,6 +20,7 @@ The configuration monitors 47 company and job-network targets, including Google,
 - Rejects roles explicitly labeled fall, winter, spring, or autumn unless the title also says summer.
 - Only alerts for roles with a recognizable US, Canadian, or UK location. Ambiguous `Remote` or missing locations are excluded.
 - Checks the official description of graduate PM matches from configured sources and excludes roles whose minimum qualifications explicitly require a master's degree.
+- Treats non-senior Growth Product Manager titles at Anthropic and OpenAI as eligible even when they are not labeled as internships or graduate roles; preferred experience language does not suppress them.
 - Stores a fingerprint for every match in SQLite, so a role alerts only once.
 - Retries temporary HTTP failures and checks sources concurrently.
 - Uses headless Chromium only for the few JavaScript-only searches; official JSON/HTML stays on the faster path.

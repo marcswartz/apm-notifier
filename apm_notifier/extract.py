@@ -155,6 +155,7 @@ def _matches_title(role_filter: RoleFilter, title: str, source: Source) -> bool:
     return role_filter.matches(
         title,
         include_adjacent_marketing=source.include_adjacent_marketing,
+        include_growth_product_roles=source.include_growth_product_roles,
     )
 
 
