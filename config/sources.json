@@ -2,6 +2,17 @@
   "source_note": "Seeded from Extern's Summer 2027 PM guide, expanded with additional requested companies, and pointed at official company search/career pages.",
   "sources": [
     {
+      "id": "revolut",
+      "name": "Revolut",
+      "career_url": "https://www.revolut.com/careers/",
+      "paginate": true,
+      "urls": [
+        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=5356541&keywords=product&location=United+Kingdom&start=0",
+        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=5356541&keywords=product&location=United+States&start=0",
+        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=5356541&keywords=product&location=Canada&start=0"
+      ]
+    },
+    {
       "id": "figma",
       "name": "Figma",
       "career_url": "https://www.figma.com/careers/early-career/",
@@ -67,7 +78,8 @@
       "urls": [
         "https://www.google.com/about/careers/applications/jobs/results/?q=product%20manager%20intern",
         "https://www.google.com/about/careers/applications/jobs/results/?q=associate%20product%20manager",
-        "https://www.google.com/about/careers/applications/jobs/results/?q=product%20marketing%20intern"
+        "https://www.google.com/about/careers/applications/jobs/results/?q=product%20marketing%20intern",
+        "https://www.google.com/about/careers/applications/jobs/results/?q=graduate+product"
       ]
     },
     {
@@ -78,7 +90,8 @@
       "urls": [
         "https://www.metacareers.com/jobsearch/?q=product+manager+intern",
         "https://www.metacareers.com/jobsearch/?q=rotational+product+manager",
-        "https://www.metacareers.com/jobsearch/?q=product+marketing+intern"
+        "https://www.metacareers.com/jobsearch/?q=product+marketing+intern",
+        "https://www.metacareers.com/jobsearch/?q=graduate+product"
       ]
     },
     {
@@ -92,7 +105,8 @@
         "https://www.amazon.jobs/en/search.json?base_query=associate%20product%20manager&loc_query=&offset=0&result_limit=100",
         "https://www.amazon.jobs/en/search.json?base_query=marketing%20intern&loc_query=&offset=0&result_limit=100",
         "https://www.amazon.jobs/en/search.json?base_query=marketing%20specialist&loc_query=&offset=0&result_limit=100",
-        "https://www.amazon.jobs/en/search.json?base_query=marketing%20analyst&loc_query=&offset=0&result_limit=100"
+        "https://www.amazon.jobs/en/search.json?base_query=marketing%20analyst&loc_query=&offset=0&result_limit=100",
+        "https://www.amazon.jobs/en/search.json?base_query=graduate+product&offset=0&result_limit=100"
       ]
     },
     {
@@ -101,7 +115,7 @@
       "career_url": "https://careers.microsoft.com/students/",
       "render": true,
       "urls": [
-        "https://apply.careers.microsoft.com/careers?query=%22product%20manager%20intern%22%20OR%20%22product%20manager%20internship%22%20OR%20%22product%20management%20intern%22%20OR%20%22product%20management%20internship%22%20OR%20%22product%20marketing%20intern%22%20OR%20%22product%20marketing%20internship%22%20OR%20%22associate%20product%20manager%22%20OR%20%22rotational%20product%20manager%22&start=0"
+        "https://apply.careers.microsoft.com/careers?query=%22product+manager+intern%22+OR+%22product+manager+internship%22+OR+%22product+management+intern%22+OR+%22product+management+internship%22+OR+%22product+marketing+intern%22+OR+%22product+marketing+internship%22+OR+%22associate+product+manager%22+OR+%22rotational+product+manager%22+OR+%22product+owner%22+OR+%22product+builder%22+OR+%22graduate+product%22+OR+%22apprentice+product%22&start=0"
       ]
     },
     {
@@ -111,7 +125,8 @@
       "render": true,
       "urls": [
         "https://jobs.apple.com/en-us/search?search=product%20manager%20intern&sort=relevance",
-        "https://jobs.apple.com/en-us/search?search=product%20marketing%20intern&sort=relevance"
+        "https://jobs.apple.com/en-us/search?search=product%20marketing%20intern&sort=relevance",
+        "https://jobs.apple.com/en-us/search?search=graduate+product&sort=relevance"
       ]
     },
     {
@@ -125,7 +140,8 @@
         "https://jobs.ea.com/en_US/careers/SearchJobs/?search=associate%20product%20manager",
         "https://jobs.ea.com/en_US/careers/SearchJobs/?search=marketing%20intern",
         "https://jobs.ea.com/en_US/careers/SearchJobs/?search=marketing%20specialist",
-        "https://jobs.ea.com/en_US/careers/SearchJobs/?search=marketing%20analyst"
+        "https://jobs.ea.com/en_US/careers/SearchJobs/?search=marketing%20analyst",
+        "https://jobs.ea.com/en_US/careers/SearchJobs/?search=graduate+product"
       ]
     },
     {
@@ -169,11 +185,14 @@
       "career_url": "https://www.uber.com/us/en/careers/apm/",
       "include_adjacent_marketing": true,
       "urls": [
-        "https://www.uber.com/us/en/careers/list/?query=product%20manager%20intern",
-        "https://www.uber.com/us/en/careers/list/?query=associate%20product%20manager",
-        "https://www.uber.com/us/en/careers/list/?query=product%20marketing%20intern",
-        "https://www.uber.com/us/en/careers/list/?query=marketing%20intern"
-      ]
+        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=106863501%2C1815218&keywords=product&location=United+States&start=0",
+        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=106863501%2C1815218&keywords=marketing&location=United+States&start=0",
+        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=106863501%2C1815218&keywords=product&location=Canada&start=0",
+        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=106863501%2C1815218&keywords=marketing&location=Canada&start=0",
+        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=106863501%2C1815218&keywords=product&location=United+Kingdom&start=0",
+        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=106863501%2C1815218&keywords=marketing&location=United+Kingdom&start=0"
+      ],
+      "paginate": true
     },
     {
       "id": "mastercard",
@@ -278,8 +297,6 @@
         "https://autodesk.wd1.myworkdayjobs.com/wday/cxs/autodesk/Ext/jobs",
         "https://autodesk.wd1.myworkdayjobs.com/wday/cxs/autodesk/Ext/jobs",
         "https://autodesk.wd1.myworkdayjobs.com/wday/cxs/autodesk/Ext/jobs",
-        "https://autodesk.wd1.myworkdayjobs.com/wday/cxs/autodesk/Ext/jobs",
-        "https://autodesk.wd1.myworkdayjobs.com/wday/cxs/autodesk/Ext/jobs",
         "https://autodesk.wd1.myworkdayjobs.com/wday/cxs/autodesk/Ext/jobs"
       ],
       "request_bodies": [
@@ -291,27 +308,7 @@
           },
           "limit": 20,
           "offset": 0,
-          "searchText": "product manager intern"
-        },
-        {
-          "appliedFacets": {
-            "locationCountry": [
-              "a30a87ed25634629aa6c3958aa2b91ea"
-            ]
-          },
-          "limit": 20,
-          "offset": 0,
-          "searchText": "associate product manager"
-        },
-        {
-          "appliedFacets": {
-            "locationCountry": [
-              "a30a87ed25634629aa6c3958aa2b91ea"
-            ]
-          },
-          "limit": 20,
-          "offset": 0,
-          "searchText": "product marketing intern"
+          "searchText": "product"
         },
         {
           "appliedFacets": {
@@ -343,7 +340,8 @@
           "offset": 0,
           "searchText": "marketing analyst"
         }
-      ]
+      ],
+      "paginate": true
     },
     {
       "id": "coinbase",
@@ -383,8 +381,10 @@
         "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=1337%2C9202023%2C2561065%2C2587638%2C290903%2C39939&keywords=product%20marketing%20intern&start=0",
         "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=1337%2C9202023%2C2561065%2C2587638%2C290903%2C39939&keywords=marketing%20intern&start=0",
         "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=1337%2C9202023%2C2561065%2C2587638%2C290903%2C39939&keywords=marketing%20specialist&start=0",
-        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=1337%2C9202023%2C2561065%2C2587638%2C290903%2C39939&keywords=marketing%20analyst&start=0"
-      ]
+        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=1337%2C9202023%2C2561065%2C2587638%2C290903%2C39939&keywords=marketing%20analyst&start=0",
+        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=1337%2C9202023%2C2561065%2C2587638%2C290903%2C39939&keywords=product&start=0"
+      ],
+      "paginate": true
     },
     {
       "id": "lyft",
@@ -427,8 +427,6 @@
         "https://visa.wd5.myworkdayjobs.com/wday/cxs/visa/Visa/jobs",
         "https://visa.wd5.myworkdayjobs.com/wday/cxs/visa/Visa/jobs",
         "https://visa.wd5.myworkdayjobs.com/wday/cxs/visa/Visa/jobs",
-        "https://visa.wd5.myworkdayjobs.com/wday/cxs/visa/Visa/jobs",
-        "https://visa.wd5.myworkdayjobs.com/wday/cxs/visa/Visa/jobs",
         "https://visa.wd5.myworkdayjobs.com/wday/cxs/visa/Visa/jobs"
       ],
       "request_bodies": [
@@ -442,31 +440,7 @@
           },
           "limit": 20,
           "offset": 0,
-          "searchText": "product manager intern"
-        },
-        {
-          "appliedFacets": {
-            "locationCountry": [
-              "a30a87ed25634629aa6c3958aa2b91ea",
-              "29247e57dbaf46fb855b224e03170bc7",
-              "bc33aa3152ec42d4995f4791a106ed09"
-            ]
-          },
-          "limit": 20,
-          "offset": 0,
-          "searchText": "associate product manager"
-        },
-        {
-          "appliedFacets": {
-            "locationCountry": [
-              "a30a87ed25634629aa6c3958aa2b91ea",
-              "29247e57dbaf46fb855b224e03170bc7",
-              "bc33aa3152ec42d4995f4791a106ed09"
-            ]
-          },
-          "limit": 20,
-          "offset": 0,
-          "searchText": "product marketing intern"
+          "searchText": "product"
         },
         {
           "appliedFacets": {
@@ -504,7 +478,8 @@
           "offset": 0,
           "searchText": "marketing analyst"
         }
-      ]
+      ],
+      "paginate": true
     },
     {
       "id": "zynga",
@@ -529,8 +504,6 @@
         "https://nvidia.wd5.myworkdayjobs.com/wday/cxs/nvidia/NVIDIAExternalCareerSite/jobs",
         "https://nvidia.wd5.myworkdayjobs.com/wday/cxs/nvidia/NVIDIAExternalCareerSite/jobs",
         "https://nvidia.wd5.myworkdayjobs.com/wday/cxs/nvidia/NVIDIAExternalCareerSite/jobs",
-        "https://nvidia.wd5.myworkdayjobs.com/wday/cxs/nvidia/NVIDIAExternalCareerSite/jobs",
-        "https://nvidia.wd5.myworkdayjobs.com/wday/cxs/nvidia/NVIDIAExternalCareerSite/jobs",
         "https://nvidia.wd5.myworkdayjobs.com/wday/cxs/nvidia/NVIDIAExternalCareerSite/jobs"
       ],
       "request_bodies": [
@@ -540,35 +513,15 @@
               "2fcb99c455831013ea529c3b93ba3236",
               "2fcb99c455831013ea52f785717432d2",
               "2fcb99c455831013ea52fb338f2932d8"
+            ],
+            "workerSubType": [
+              "0c40f6bd1d8f10adf6dae42e46d44a17",
+              "ab40a98049581037a3ada55b087049b7"
             ]
           },
           "limit": 20,
           "offset": 0,
-          "searchText": "product manager intern"
-        },
-        {
-          "appliedFacets": {
-            "locationHierarchy1": [
-              "2fcb99c455831013ea529c3b93ba3236",
-              "2fcb99c455831013ea52f785717432d2",
-              "2fcb99c455831013ea52fb338f2932d8"
-            ]
-          },
-          "limit": 20,
-          "offset": 0,
-          "searchText": "associate product manager"
-        },
-        {
-          "appliedFacets": {
-            "locationHierarchy1": [
-              "2fcb99c455831013ea529c3b93ba3236",
-              "2fcb99c455831013ea52f785717432d2",
-              "2fcb99c455831013ea52fb338f2932d8"
-            ]
-          },
-          "limit": 20,
-          "offset": 0,
-          "searchText": "product marketing intern"
+          "searchText": "product"
         },
         {
           "appliedFacets": {
@@ -606,7 +559,8 @@
           "offset": 0,
           "searchText": "marketing analyst"
         }
-      ]
+      ],
+      "paginate": true
     },
     {
       "id": "airbnb",
@@ -635,7 +589,8 @@
       "urls": [
         "https://lifeattiktok.com/search?keyword=product%20manager%20intern",
         "https://lifeattiktok.com/search?keyword=product%20marketing%20intern",
-        "https://lifeattiktok.com/search?keyword=product%20manager%20graduate"
+        "https://lifeattiktok.com/search?keyword=product%20manager%20graduate",
+        "https://lifeattiktok.com/search?keyword=graduate+product"
       ]
     },
     {
@@ -656,30 +611,21 @@
       },
       "url_template": "https://salesforce.wd12.myworkdayjobs.com/External_Career_Site/{path}",
       "urls": [
-        "https://salesforce.wd12.myworkdayjobs.com/wday/cxs/salesforce/External_Career_Site/jobs",
-        "https://salesforce.wd12.myworkdayjobs.com/wday/cxs/salesforce/External_Career_Site/jobs",
         "https://salesforce.wd12.myworkdayjobs.com/wday/cxs/salesforce/External_Career_Site/jobs"
       ],
       "request_bodies": [
         {
-          "appliedFacets": {},
+          "appliedFacets": {
+            "jobFamilyGroup": [
+              "14fa3452ec7c1011f90cf2c552640000"
+            ]
+          },
           "limit": 20,
           "offset": 0,
-          "searchText": "product manager intern"
-        },
-        {
-          "appliedFacets": {},
-          "limit": 20,
-          "offset": 0,
-          "searchText": "product marketing intern"
-        },
-        {
-          "appliedFacets": {},
-          "limit": 20,
-          "offset": 0,
-          "searchText": "associate product manager"
+          "searchText": "product"
         }
-      ]
+      ],
+      "paginate": true
     },
     {
       "id": "adobe",
@@ -695,8 +641,6 @@
         "https://adobe.wd5.myworkdayjobs.com/wday/cxs/adobe/external_experienced/jobs",
         "https://adobe.wd5.myworkdayjobs.com/wday/cxs/adobe/external_experienced/jobs",
         "https://adobe.wd5.myworkdayjobs.com/wday/cxs/adobe/external_experienced/jobs",
-        "https://adobe.wd5.myworkdayjobs.com/wday/cxs/adobe/external_experienced/jobs",
-        "https://adobe.wd5.myworkdayjobs.com/wday/cxs/adobe/external_experienced/jobs",
         "https://adobe.wd5.myworkdayjobs.com/wday/cxs/adobe/external_experienced/jobs"
       ],
       "request_bodies": [
@@ -704,19 +648,7 @@
           "appliedFacets": {},
           "limit": 20,
           "offset": 0,
-          "searchText": "product manager intern"
-        },
-        {
-          "appliedFacets": {},
-          "limit": 20,
-          "offset": 0,
-          "searchText": "product marketing intern"
-        },
-        {
-          "appliedFacets": {},
-          "limit": 20,
-          "offset": 0,
-          "searchText": "associate product manager"
+          "searchText": "product"
         },
         {
           "appliedFacets": {},
@@ -736,7 +668,8 @@
           "offset": 0,
           "searchText": "marketing analyst"
         }
-      ]
+      ],
+      "paginate": true
     },
     {
       "id": "oracle",
@@ -774,8 +707,14 @@
       "name": "HubSpot",
       "career_url": "https://www.hubspot.com/careers",
       "urls": [
-        "https://api.greenhouse.io/v1/boards/hubspotjobs/jobs"
-      ]
+        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=68529&keywords=product&location=United+States&start=0",
+        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=68529&keywords=marketing&location=United+States&start=0",
+        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=68529&keywords=product&location=Canada&start=0",
+        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=68529&keywords=marketing&location=Canada&start=0",
+        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=68529&keywords=product&location=United+Kingdom&start=0",
+        "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=68529&keywords=marketing&location=United+Kingdom&start=0"
+      ],
+      "paginate": true
     },
     {
       "id": "spotify",
@@ -792,7 +731,8 @@
       "career_url": "https://jobs.netflix.com/",
       "urls": [
         "https://app.eightfold.ai/careers?domain=netflix.com&query=product%20manager%20intern&start=0",
-        "https://app.eightfold.ai/careers?domain=netflix.com&query=product%20marketing%20intern&start=0"
+        "https://app.eightfold.ai/careers?domain=netflix.com&query=product%20marketing%20intern&start=0",
+        "https://app.eightfold.ai/careers?domain=netflix.com&query=graduate+product&start=0"
       ]
     },
     {
@@ -801,17 +741,19 @@
       "career_url": "https://jobs.nike.com/",
       "urls": [
         "https://careers.nike.com/jobs?keywords=product%20manager%20intern",
-        "https://careers.nike.com/jobs?keywords=product%20marketing%20intern"
+        "https://careers.nike.com/jobs?keywords=product%20marketing%20intern",
+        "https://careers.nike.com/jobs?keywords=graduate+product"
       ]
     },
     {
       "id": "disney",
       "name": "Disney",
-      "career_url": "https://jobs.disneycareers.com/",
+      "career_url": "https://www.disneycareers.com",
       "urls": [
-        "https://jobs.disneycareers.com/search-jobs/product%20manager%20intern/391-28648/1",
-        "https://jobs.disneycareers.com/search-jobs/product%20marketing%20intern/391-28648/1"
-      ]
+        "https://www.disneycareers.com/en/search-jobs/results?ActiveFacetID=0&CurrentPage=1&RecordsPerPage=100&Keywords=product&SearchType=1&SearchResultsModuleName=Search+Results&SearchResultType=1&OrganizationIds=391-28648&SortCriteria=0&SortDirection=1",
+        "https://www.disneycareers.com/en/search-jobs/results?ActiveFacetID=0&CurrentPage=1&RecordsPerPage=100&Keywords=marketing&SearchType=1&SearchResultsModuleName=Search+Results&SearchResultType=1&OrganizationIds=391-28648&SortCriteria=0&SortDirection=1"
+      ],
+      "paginate": true
     },
     {
       "id": "walmart",
@@ -820,7 +762,8 @@
       "render": true,
       "urls": [
         "https://careers.walmart.com/us/en/results?searchQuery=product%20manager%20intern",
-        "https://careers.walmart.com/us/en/results?searchQuery=product%20marketing%20intern"
+        "https://careers.walmart.com/us/en/results?searchQuery=product%20marketing%20intern",
+        "https://careers.walmart.com/us/en/results?searchQuery=graduate+product"
       ]
     },
     {
@@ -856,7 +799,8 @@
       "career_url": "https://www.bloomberg.com/careers/",
       "urls": [
         "https://bloomberg.avature.net/careers/SearchJobs/?q=product%20manager%20intern",
-        "https://bloomberg.avature.net/careers/SearchJobs/?q=product%20marketing%20intern"
+        "https://bloomberg.avature.net/careers/SearchJobs/?q=product%20marketing%20intern",
+        "https://bloomberg.avature.net/careers/SearchJobs/?q=graduate+product"
       ]
     },
     {
@@ -884,6 +828,15 @@
       "enabled": false,
       "urls": [
         "https://wellfound.com/role/product-manager-intern"
+      ]
+    },
+    {
+      "id": "newgrad-community-backcheck",
+      "name": "New Graduate Community Back-check",
+      "career_url": "https://github.com/SimplifyJobs/New-Grad-Positions",
+      "verify_job_links": true,
+      "urls": [
+        "https://raw.githubusercontent.com/SimplifyJobs/New-Grad-Positions/dev/README.md"
       ]
     }
   ]

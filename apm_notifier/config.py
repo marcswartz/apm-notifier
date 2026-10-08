@@ -169,7 +169,7 @@ def load_sources(path: Path) -> tuple[Source, ...]:
                 include_growth_product_roles=bool(
                     item.get("include_growth_product_roles", False)
                 ),
-                include_product_specialists=bool(item.get("include_product_specialists", False)),
+                include_product_specialists=bool(item.get("include_product_specialists", True)),
                 paginate=bool(item.get("paginate", False)),
             )
         )

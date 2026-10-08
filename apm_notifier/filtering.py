@@ -7,24 +7,27 @@ from .models import normalize_space
 
 
 EXPLICIT_EARLY_CAREER = re.compile(
-    r"\b(?:associate\s+product\s+manager|rotational\s+product\s+manager|"
-    r"product\s+manager\s*,?\s+associate)\b",
+    r"(?:\b(?:associate|rotational|apprentice|apprenticeship|junior|trainee|"
+    r"entry[ -]level|early[ -]career)\b.{0,100}\bproduct\s+(?:manager|management|owner|builder)\b|"
+    r"\bproduct\s+(?:manager|management|owner|builder)\b.{0,100}\b(?:associate|rotational|"
+    r"apprentice|apprenticeship|junior|trainee|entry[ -]level|early[ -]career)\b|"
+    r"\bproduct\s+(?:manager|owner)\s+I\b)",
     re.IGNORECASE,
 )
 GRADUATE_PRODUCT_MANAGER = re.compile(
-    r"(?:\bproduct\s+manager\b.{0,100}\b(?:graduate|new[ -]grad)\b|"
-    r"\b(?:graduate|new[ -]grad)\b.{0,100}\bproduct\s+manager\b)",
+    r"(?:\bproduct\s+(?:manager|management|owner|builder)\b.{0,100}\b(?:graduate|new[ -]grad|new[ -]college[ -]grad)\b|"
+    r"\b(?:graduate|new[ -]grad|new[ -]college[ -]grad)\b.{0,100}\bproduct\s+(?:manager|management|owner|builder)\b)",
     re.IGNORECASE,
 )
 PRODUCT_ROLE = re.compile(
     r"\b(?:product\s+management|product\s+manager|technical\s+product\s+manager|"
-    r"growth\s+product\s+manager|product\s+marketing(?:\s+manager)?)\b",
+    r"growth\s+product\s+manager|product\s+owner|product\s+builder|product\s+marketing(?:\s+manager)?)\b",
     re.IGNORECASE,
 )
 PRODUCT_SPECIALIST = re.compile(
     r"(?:\b(?:specialist|analyst|coordinator)\b(?:\W+\w+){0,3}\W+product\s+(?:management|manager)\b|"
     r"\bproduct\s+(?:management|manager)\b(?:\W+\w+){0,3}\W+(?:specialist|analyst|coordinator)\b|"
-    r"\bproduct\s+specialist\b)",
+    r"\bproduct\s+(?:specialist|analyst|coordinator)\b)",
     re.IGNORECASE,
 )
 GROWTH_PRODUCT_MANAGER = re.compile(
@@ -241,22 +244,22 @@ class RoleFilter:
         title: str,
         include_adjacent_marketing: bool = False,
         include_growth_product_roles: bool = False,
-        include_product_specialists: bool = False,
+        include_product_specialists: bool = True,
     ) -> bool:
-        candidate = normalize_space(title)
+        candidate = re.sub(r"[\u2010-\u2015]", "-", normalize_space(title))
         if len(candidate) < 5 or len(candidate) > 220:
             return False
 
         years = {int(value) for value in re.findall(r"\b20\d{2}\b", candidate)}
         if years & self.excluded_years and self.target_year not in years:
             return False
-        if NON_SUMMER_TERM.search(candidate) and not SUMMER_TERM.search(candidate):
-            return False
-
         early_career = bool(
             EXPLICIT_EARLY_CAREER.search(candidate) or GRADUATE_PRODUCT_MANAGER.search(candidate)
         )
         internship = bool(INTERNSHIP.search(candidate) and PRODUCT_ROLE.search(candidate))
+        # Seasonal limits apply to internships, not full-time graduate cohorts.
+        if INTERNSHIP.search(candidate) and NON_SUMMER_TERM.search(candidate) and not SUMMER_TERM.search(candidate):
+            return False
         adjacent_marketing = bool(
             include_adjacent_marketing
             and not NON_ENTRY_ADJACENT_MARKETING.search(candidate)

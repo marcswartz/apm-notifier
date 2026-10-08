@@ -22,6 +22,18 @@ class RoleFilterTests(unittest.TestCase):
             "Product Manager: New Grad Accelerator",
             "Product Manager, New Grad (2027 Start)",
             "Early Career, Associate Product Manager (2027)",
+            "Graduate Programme 2027: Product Owner (UX)",
+            "Graduate Programme 2027: Product Owner (Technical)",
+            "Internship Programme 2027: Product Owner (UX)",
+            "Apprentice Product Manager",
+            "Associate Product Builder",
+            "Junior Product Manager - Product Management",
+            "Entry-Level Product Owner",
+            "Early Career Product Manager",
+            "Early–Career Product Manager",
+            "Product Manager I",
+            "Rotational Product Management Program - Fall 2027",
+            "Graduate Product Owner - Spring 2027",
         )
         for title in accepted:
             with self.subTest(title=title):
@@ -38,6 +50,12 @@ class RoleFilterTests(unittest.TestCase):
             "Product Manager Intern — Summer 2026",
             "Product Marketing Intern — Winter 2027",
             "Director, Associate Product Manager Program",
+            "Senior Product Owner",
+            "Graduate Software Engineer - Product Team",
+            "Product Designer - New Grad",
+            "Product Manager II",
+            "Graduate Programme 2026: Product Owner (UX)",
+            "Product Owner Intern - Winter 2027",
         )
         for title in rejected:
             with self.subTest(title=title):
@@ -63,11 +81,11 @@ class RoleFilterTests(unittest.TestCase):
             )
         )
 
-    def test_product_specialists_require_opt_in_and_exclude_senior_roles(self) -> None:
+    def test_product_specialists_are_enabled_by_default_and_exclude_senior_roles(self) -> None:
         for title in ("Specialist, Global Product Management", "Product Management Analyst", "Product Specialist"):
             with self.subTest(title=title):
-                self.assertFalse(self.filter.matches(title))
-                self.assertTrue(self.filter.matches(title, include_product_specialists=True))
+                self.assertFalse(self.filter.matches(title, include_product_specialists=False))
+                self.assertTrue(self.filter.matches(title))
         for title in ("Senior Specialist, Global Product Management", "Lead Product Specialist", "Sales Specialist", "Product Manager"):
             with self.subTest(title=title):
                 self.assertFalse(self.filter.matches(title, include_product_specialists=True))

@@ -79,7 +79,9 @@ class SaveEnvironmentTests(unittest.TestCase):
         self.assertTrue(by_id["mastercard-product"].include_product_specialists)
         self.assertTrue(by_id["mastercard-product"].paginate)
         self.assertTrue(by_id["questrade"].paginate)
-        self.assertEqual(len(sources), 51)
+        self.assertIn("revolut", by_id)
+        self.assertIn("newgrad-community-backcheck", by_id)
+        self.assertEqual(len(sources), 53)
 
 
 if __name__ == "__main__":

@@ -5,7 +5,7 @@ from html import unescape
 import json
 import re
 from typing import Any, Iterable
-from urllib.parse import urljoin
+from urllib.parse import unquote, urljoin, urlsplit
 
 from .filtering import RoleFilter
 from .models import Job, Source, normalize_space
@@ -131,14 +131,15 @@ def _location_text(value: Any) -> str:
         return normalize_space(value)
     if isinstance(value, list):
         parts = [_location_text(item) for item in value]
-        return "; ".join(part for part in parts if part)[:300]
+        return "; ".join(dict.fromkeys(part for part in parts if part))
     if isinstance(value, dict):
-        direct = _first_string(value, ("name", "location", "formattedAddress", "city", "addressLocality"))
-        if direct:
-            return direct
         address = value.get("address")
         if address is not None:
             return _location_text(address)
+        components = [_first_string(value, (key,)) for key in (
+            "formattedAddress", "name", "location", "city", "addressLocality", "addressRegion", "addressCountry",
+        )]
+        return ", ".join(dict.fromkeys(part for part in components if part))
     return ""
 
 
@@ -179,13 +180,17 @@ def _jobs_from_json(
         else:
             url = raw_url
         if not url:
-            url = f"{source.career_url}#{identifier}" if identifier else source.career_url
-        location = ""
-        for key in LOCATION_KEYS:
-            if key in item:
-                location = _location_text(item[key])
-                if location:
-                    break
+            # A shared career URL would collapse distinct job IDs in alert history.
+            continue
+        location = "; ".join(dict.fromkeys(
+            _location_text(item[key]) for key in LOCATION_KEYS
+            if key in item and _location_text(item[key])
+        ))
+        # Workday cards may say "2 Locations" while the job URL names an office.
+        if not role_filter.matches_location(location, title) and "myworkdayjobs.com" in urlsplit(base_url).netloc:
+            office = re.search(r"/job/([^/]+)/", url)
+            if office:
+                location = "; ".join(filter(None, (location, unquote(office.group(1)).replace("-", " "))))
         if not role_filter.matches_location(location, title):
             continue
         jobs.append(
@@ -243,6 +248,67 @@ def _jobs_from_markdown(text: str, source: Source, role_filter: RoleFilter) -> l
     return jobs
 
 
+class CommunityTableParser(HTMLParser):
+    """Read maintained new-grad HTML tables, including repeated-company rows."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.rows: list[list[tuple[str, list[str]]]] = []
+        self.cells: list[tuple[str, list[str]]] = []
+        self.parts: list[str] | None = None
+        self.links: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        attributes = dict(attrs)
+        if tag == "tr":
+            self.cells = []
+        elif tag == "td":
+            self.parts, self.links = [], []
+        elif self.parts is not None and tag == "a" and attributes.get("href"):
+            self.links.append(attributes["href"] or "")
+        elif self.parts is not None and tag == "br":
+            self.parts.append(" ")
+
+    def handle_data(self, data: str) -> None:
+        if self.parts is not None:
+            self.parts.append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag == "td" and self.parts is not None:
+            self.cells.append((normalize_space(" ".join(self.parts)), self.links))
+            self.parts = None
+        elif tag == "tr" and self.cells:
+            self.rows.append(self.cells)
+
+
+def _jobs_from_community_tables(text: str, source: Source, role_filter: RoleFilter) -> list[Job]:
+    from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+
+    parser = CommunityTableParser()
+    parser.feed(text)
+    jobs: list[Job] = []
+    previous_company = ""
+    for cells in parser.rows:
+        if len(cells) < 4:
+            continue
+        company = cells[0][0].strip("🔥 ↳") or previous_company
+        previous_company = company
+        title, location = cells[1][0], cells[2][0]
+        links = cells[3][1]
+        if not company or "🔒" in cells[3][0] or not links or not _matches_title(role_filter, title, source):
+            continue
+        if not role_filter.matches_location(location, title):
+            continue
+        # The first application link is the employer link; strip tracker-only ref.
+        parts = urlsplit(links[0])
+        query = [(k, v) for k, v in parse_qsl(parts.query) if not (k == "ref" and v == "Simplify")]
+        url = urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query), ""))
+        if parts.scheme not in {"http", "https"} or parts.hostname == "simplify.jobs":
+            continue
+        jobs.append(Job(source.id, company, title, url, location))
+    return jobs
+
+
 JOB_COLLECTION_KEYS = frozenset(
     {
         "jobs",
@@ -266,7 +332,7 @@ ZERO_RESULT_MARKERS = (
     "0 results",
 )
 JOB_DETAIL_HREF = re.compile(
-    r"/(?:profile/job_details|(?:careers/)?(?:job|jobs|details|positions|jobdetail))/(?:results/)?[^/?#\"']+",
+    r"/(?:profile/job_details|(?:careers/)?(?:job|jobs|details|position|positions|jobdetail))/(?:results/)?[^/?#\"']+",
     re.IGNORECASE,
 )
 NUMERIC_SEARCH_HREF = re.compile(r"/search/\d{6,}", re.IGNORECASE)
@@ -274,6 +340,14 @@ GOOGLE_INIT_DATA = re.compile(
     r"AF_initDataCallback\(\{key:\s*'ds:1'.*?data:\s*",
     re.DOTALL,
 )
+
+
+def _has_json_job_signal(payload: Any) -> bool:
+    return any(
+        item.get("@type") == "JobPosting"
+        or any(isinstance(item.get(key), list) for key in JOB_COLLECTION_KEYS)
+        for item in _walk_json(payload)
+    )
 
 
 def _json_array_at(text: str, start: int) -> Any | None:
@@ -329,12 +403,14 @@ def response_has_job_signal(text: str, content_type: str) -> bool:
             return False
         if isinstance(payload, list):
             return not payload or any(isinstance(item, dict) for item in payload)
-        return any(key in item for item in _walk_json(payload) for key in JOB_COLLECTION_KEYS)
+        return _has_json_job_signal(payload)
 
     lowered = text.casefold()
     if any(marker in lowered for marker in ZERO_RESULT_MARKERS):
         return True
     if "| company | role | location |" in lowered:
+        return True
+    if "<table" in lowered and "<th" in lowered and "application</th>" in lowered:
         return True
     if 'data-testid="job-card"' in lowered:
         return True
@@ -351,7 +427,7 @@ def response_has_job_signal(text: str, content_type: str) -> bool:
             payload = json.loads(script)
         except json.JSONDecodeError:
             continue
-        if any(key in item for item in _walk_json(payload) for key in JOB_COLLECTION_KEYS):
+        if _has_json_job_signal(payload):
             return True
     phenom_state = _json_object_after(text, "phApp.ddo =")
     if phenom_state is not None and any(
@@ -444,6 +520,40 @@ def _jobs_from_linkedin_cards(
         if _matches_title(role_filter, title, source)
         and role_filter.matches_location(location, title)
     ]
+
+
+class TalentBrewJobCardParser(HTMLParser):
+    """Read actual titles and locations without mixing in posting dates."""
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.cards: list[tuple[str, str, str]] = []
+        self.href = ""
+        self.title: list[str] = []
+        self.location: list[str] = []
+        self.field = ""
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        a = dict(attrs)
+        if tag == "a" and a.get("data-job-id"):
+            self.href = a.get("href") or ""
+            self.title, self.location = [], []
+        elif self.href and tag == "h2":
+            self.field = "title"
+        elif self.href and tag == "span" and "job-location" in (a.get("class") or "").split():
+            self.field = "location"
+
+    def handle_data(self, data: str) -> None:
+        if self.field == "title":
+            self.title.append(data)
+        elif self.field == "location":
+            self.location.append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in {"h2", "span"}:
+            self.field = ""
+        elif tag == "a" and self.href:
+            self.cards.append((normalize_space(" ".join(self.title)), normalize_space(" ".join(self.location)), self.href))
+            self.href = ""
 
 
 class YCJobCardParser(HTMLParser):
@@ -1024,6 +1134,8 @@ def extract_jobs(
             pass
     else:
         jobs.extend(_jobs_from_markdown(text, source, role_filter))
+        if source.id.endswith("backcheck") and "<table" in text:
+            jobs.extend(_jobs_from_community_tables(text, source, role_filter))
         if "workatastartup.com" in base_url:
             jobs.extend(_jobs_from_yc_cards(text, source, base_url, role_filter))
         if "metacareers.com" in base_url:
@@ -1040,6 +1152,14 @@ def extract_jobs(
             jobs.extend(_jobs_from_shopify_router(text, source, base_url, role_filter))
         if "linkedin.com/jobs-guest/" in base_url:
             jobs.extend(_jobs_from_linkedin_cards(text, source, base_url, role_filter))
+        if "disneycareers.com" in base_url:
+            cards = TalentBrewJobCardParser()
+            cards.feed(text)
+            jobs.extend(
+                Job(source.id, source.name, title, urljoin(base_url, href), location)
+                for title, location, href in cards.cards
+                if _matches_title(role_filter, title, source) and role_filter.matches_location(location, title)
+            )
         parser = CareerHTMLParser()
         parser.feed(text)
         for href, label in parser.anchors:
@@ -1050,6 +1170,8 @@ def extract_jobs(
             if "lifeattiktok.com" in base_url and NUMERIC_SEARCH_HREF.search(href):
                 continue
             if "linkedin.com/jobs-guest/" in base_url and "/jobs/view/" in href:
+                continue
+            if "disneycareers.com" in base_url and "/job/" in href:
                 continue
             title = label
             location = ""

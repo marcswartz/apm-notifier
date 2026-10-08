@@ -7,6 +7,42 @@ from apm_notifier.models import Source
 
 
 class ExtractJobsTests(unittest.TestCase):
+    def test_api_failure_with_null_jobs_is_not_a_healthy_zero(self) -> None:
+        self.assertFalse(response_has_job_signal('{"data":{"jobs":null},"errors":[{"message":"404"}]}', "application/json"))
+        self.assertTrue(response_has_job_signal('{"data":{"jobs":[]}}', "application/json"))
+
+    def test_disney_card_does_not_treat_posting_date_as_cohort_year(self) -> None:
+        html = '''<ul><li><a href="/en/job/orlando/apm/1/2" data-job-id="2">
+        <h2>Associate Product Manager</h2><span class="job-brand">Disney</span>
+        <span class="job-location">Orlando, Florida</span><span class="job-date-posted">Oct. 8, 2026</span></a></li></ul>'''
+        source = Source("disney", "Disney", ("https://www.disneycareers.com/en/search-jobs/product",), "https://www.disneycareers.com")
+        jobs = extract_jobs(html, "text/html", source, source.urls[0], RoleFilter(2027, (2026,)))
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(jobs[0].title, "Associate Product Manager")
+
+    def test_community_table_preserves_employer_and_posting_links(self) -> None:
+        html = '''<table><tr><th>Company</th><th>Role</th><th>Location</th><th>Application</th></tr>
+        <tr><td>🔥 Example</td><td>Junior Product Owner</td><td>London<br>UK</td><td><a href="https://example.com/jobs/1?ref=Simplify&amp;utm_source=test">Apply</a></td></tr>
+        <tr><td>↳</td><td>Associate Product Builder</td><td>Toronto</td><td><a href="https://example.com/jobs/2">Apply</a></td></tr>
+        <tr><td>Closed</td><td>Associate Product Manager</td><td>Toronto</td><td>🔒</td></tr></table>'''
+        source = Source("newgrad-community-backcheck", "Tracker", ("https://example.com/list",), "https://example.com/list")
+        self.assertTrue(response_has_job_signal(html, "text/plain"))
+        jobs = extract_jobs(html, "text/plain", source, source.urls[0], RoleFilter(2027, (2026,)))
+        self.assertEqual(len(jobs), 2)
+        self.assertEqual([j.company for j in jobs], ["Example", "Example"])
+        self.assertNotIn("ref=Simplify", jobs[0].url)
+
+    def test_checks_secondary_country_and_workday_office(self) -> None:
+        source = Source("example", "Example", ("https://example.wd1.myworkdayjobs.com/jobs",), "https://example.com", url_template="https://example.wd1.myworkdayjobs.com/Jobs/{path}")
+        payload = {"jobPostings": [
+            {"title": "Graduate Product Owner", "externalPath": "/job/London-England/owner_1", "locationsText": "2 Locations"},
+            {"title": "Associate Product Manager", "externalPath": "/job/Singapore/pm_2", "location": "Singapore", "jobLocation": {"address": {"addressLocality": "Small Town", "addressCountry": "GB"}}},
+        ]}
+        jobs = extract_jobs(json.dumps(payload), "application/json", source, source.urls[0], RoleFilter(2027, (2026,)))
+        self.assertEqual(len(jobs), 2)
+        self.assertIn("London", jobs[0].location)
+        self.assertIn("GB", jobs[1].location)
+
     def test_extracts_dayforce_posting_id_and_all_locations(self) -> None:
         source = Source(
             id="questrade", name="Questrade", urls=("https://jobs.dayforcehcm.com/api/geo/qfg/jobposting/search",),
@@ -61,7 +97,7 @@ class ExtractJobsTests(unittest.TestCase):
             self.filter,
         )
         self.assertEqual(len(jobs), 1)
-        self.assertEqual(jobs[0].location, "Toronto")
+        self.assertIn("Toronto", jobs[0].location)
         self.assertEqual(jobs[0].url, "https://jobs.example.com/jobs/pm-7")
 
     def test_extracts_opted_in_adjacent_marketing_role(self) -> None:
@@ -544,7 +580,7 @@ class ExtractJobsTests(unittest.TestCase):
             self.filter,
         )
         self.assertEqual(len(jobs), 1)
-        self.assertEqual(jobs[0].location, "Toronto")
+        self.assertIn("Toronto", jobs[0].location)
         self.assertEqual(jobs[0].title, "Marketing Intern — Summer 2027")
 
     def test_extracts_google_init_data_without_browser_rendering(self) -> None:

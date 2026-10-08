@@ -61,6 +61,59 @@ class GraduateClient:
 
 
 class MonitorTests(unittest.TestCase):
+    def test_disney_api_pages_are_unwrapped_and_all_scanned(self) -> None:
+        from urllib.parse import parse_qs, urlsplit
+        class DisneyClient(FakeClient):
+            def fetch(self, url, extra_headers=None, method="GET", body=""):
+                page = int(parse_qs(urlsplit(url).query)["CurrentPage"][0])
+                title = "Senior Product Manager" if page == 1 else "Junior Product Owner"
+                html = f'<section data-current-page="{page}" data-total-pages="2"><a data-job-id="{page}" href="/en/job/toronto/owner/1/{page}"><h2>{title}</h2><span class="job-location">Toronto, Canada</span></a></section>'
+                return FetchResult(url, url, "application/json", json.dumps({"results": html}))
+        source = Source("disney", "Disney", ("https://www.disneycareers.com/en/search-jobs/results?CurrentPage=1",), "https://www.disneycareers.com", paginate=True)
+        monitor = Monitor((source,), DisneyClient(), RoleFilter(2027, (2026,)), None, None, 1, False)
+        result = monitor._check_source(source)
+        self.assertTrue(result.succeeded)
+        self.assertEqual(len(result.jobs), 1)
+        self.assertTrue(result.jobs[0].url.endswith("/2"))
+
+    def test_html_next_page_is_scanned(self) -> None:
+        class HtmlClient(FakeClient):
+            def fetch(self, url, extra_headers=None, method="GET", body=""):
+                text = '<a href="/jobs/old">Senior Product Manager</a><a href="/page2">Next</a>' if url.endswith("page1") else '<a href="/jobs/new">Junior Product Owner - Toronto</a>'
+                return FetchResult(url, url, "text/html", text)
+        source = Source("example", "Example", ("https://example.com/page1",), "https://example.com", paginate=True)
+        monitor = Monitor((source,), HtmlClient(), RoleFilter(2027, (2026,)), None, None, 1, False)
+        result = monitor._check_source(source)
+        self.assertTrue(result.succeeded)
+        self.assertEqual(len(result.jobs), 1)
+
+    def test_different_postings_with_the_same_title_both_alert(self) -> None:
+        class TwoJobsClient(FakeClient):
+            def fetch(self, url, extra_headers=None, method="GET", body=""):
+                payload = {"jobs": [
+                    {"title": "Associate Product Manager", "url": "https://example.com/jobs/1", "location": "Toronto"},
+                    {"title": "Associate Product Manager", "url": "https://example.com/jobs/2", "location": "London"},
+                ]}
+                return FetchResult(url, url, "application/json", json.dumps(payload))
+        source = Source("example", "Example", ("https://example.com/jobs",), "https://example.com")
+        notifier = FakeNotifier()
+        with tempfile.TemporaryDirectory() as directory:
+            store = StateStore(Path(directory) / "state.sqlite3")
+            try:
+                monitor = Monitor((source,), TwoJobsClient(), RoleFilter(2027, (2026,)), store, notifier, 1, True)
+                self.assertEqual(monitor.run_once().alerts_delivered, 2)
+                self.assertEqual(monitor.run_once().alerts_delivered, 0)
+            finally:
+                store.close()
+
+    def test_linkedin_empty_fragment_is_a_valid_end_of_results(self) -> None:
+        class EmptyClient(FakeClient):
+            def fetch(self, url, extra_headers=None, method="GET", body=""):
+                return FetchResult(url, url, "text/html", '<!DOCTYPE html>\n\n<!---->  ')
+        source = Source("revolut", "Revolut", ("https://www.linkedin.com/jobs-guest/jobs/api/search",), "https://www.revolut.com/careers", paginate=True)
+        monitor = Monitor((source,), EmptyClient(), RoleFilter(2027, (2026,)), None, None, 1, False)
+        self.assertTrue(monitor._check_source(source).succeeded)
+
     def test_scans_later_pages_and_rejects_repeated_pages(self) -> None:
         for offset_key, total_key in (("offset", "total"), ("paginationStart", "maxCount")):
             for repeated in (False, True):

@@ -22,7 +22,7 @@ concurrency:
 jobs:
   check-career-pages:
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 8
     env:
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -34,9 +34,8 @@ jobs:
       TARGET_YEAR: "2027"
       EXCLUDED_YEARS: "2020,2021,2022,2023,2024,2025,2026"
       ALLOWED_COUNTRIES: "US,CA,UK"
-      # A lost or first-time cache establishes a quiet baseline instead of
-      # sending every role that is already live.
-      ALERT_ON_FIRST_RUN: "false"
+      # If history is lost, send current matches rather than silently missing them.
+      ALERT_ON_FIRST_RUN: "true"
 
     steps:
       - name: Check out notifier
@@ -62,6 +61,9 @@ jobs:
           mkdir -p data
           python3 --version
           google-chrome --version
+
+      - name: Verify monitoring rules
+        run: python3 -m unittest discover -s tests -q
 
       - name: Check career pages and deliver new alerts
         run: python3 -m apm_notifier run --once

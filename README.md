@@ -2,9 +2,9 @@
 
 APM Notifier watches official company career searches and sends a one-time phone alert when it finds a new:
 
-- Associate Product Manager or Rotational Product Manager role
+- Associate, Rotational, Apprentice, Junior, Entry-Level, or Early-Career Product Manager / Product Owner / Product Builder roles
 - Bachelor-eligible Graduate or New Grad Product Manager role
-- Non-senior Product Management specialist, analyst, and coordinator roles at Mastercard
+- Non-senior Product Management specialist, analyst, and coordinator roles across monitored companies
 - Product Manager / Product Management internship or co-op
 - Technical or Growth Product Manager internship
 - Non-senior Growth Product Manager roles at Anthropic and OpenAI
@@ -12,14 +12,16 @@ APM Notifier watches official company career searches and sends a one-time phone
 - Summer marketing internships and junior marketing associate/analyst/specialist/coordinator roles
   at the requested companies
 
-The configuration monitors 51 career feeds and job-network targets, including Figma, Questrade, Google, Meta, Amazon, Microsoft, Apple, TikTok, Autodesk Canada-wide, Anthropic, Coinbase, DoorDash, Duolingo, Electronic Arts, Instacart, LinkedIn, Lyft, Reddit, Robinhood, Shopify, Snap, Spotify, Square/Block, Visa, Zynga, NVIDIA, Mastercard, Wealthsimple, OpenAI, Lime, Stripe, Uber, Airbnb, Adobe, and several others. Wellfound is present but disabled because its job pages require an interactive session. A separate US-wide [Summer 2027 community tracker](https://github.com/sndsh404/summer-2027-internships) is monitored as an independent back-check, so matching roles from companies outside that fixed list can also be detected. The original target list was seeded from the [Extern Summer 2027 PM guide](https://www.extern.com/post/product-management-internships-summer-2027-guide).
+The configuration monitors 53 career feeds and job-network targets, including Revolut, Figma, Questrade, Google, Meta, Amazon, Microsoft, Apple, TikTok, Autodesk Canada-wide, Anthropic, Coinbase, DoorDash, Duolingo, Electronic Arts, Instacart, LinkedIn, Lyft, Reddit, Robinhood, Shopify, Snap, Spotify, Square/Block, Visa, Zynga, NVIDIA, Mastercard, Wealthsimple, OpenAI, Lime, Stripe, Uber, Airbnb, Adobe, and several others. Wellfound is present but disabled because its job pages require an interactive session. A separate [new-grad community tracker](https://github.com/SimplifyJobs/New-Grad-Positions), with live employer-link verification, and the US-wide [Summer 2027 community tracker](https://github.com/sndsh404/summer-2027-internships) are monitored as independent back-checks, so matching roles from companies outside that fixed list can also be detected. The original target list was seeded from the [Extern Summer 2027 PM guide](https://www.extern.com/post/product-management-internships-summer-2027-guide).
 
 ## What it does
 
 - Checks the configured career searches every five minutes by default.
-- Scans all result pages for Questrade and the Mastercard Product category, including anonymous Dayforce search sessions.
+- Scans every result page for configured Workday, Dayforce, LinkedIn, and Disney feeds; resolves anonymous Dayforce search sessions.
+- Uses employer-published LinkedIn feeds for Revolut, Uber, and HubSpot where direct feeds are blocked or retired.
+- Keeps distinct postings with the same title separate and reads all provided locations before filtering.
 - Accepts titles mentioning 2027 or no year and rejects explicitly older-year titles.
-- Rejects roles explicitly labeled fall, winter, spring, or autumn unless the title also says summer.
+- Rejects non-summer internships, while allowing full-time graduate cohorts that start in fall, winter, or spring.
 - Only alerts for roles with a recognizable US, Canadian, or UK location. Ambiguous `Remote` or missing locations are excluded.
 - Checks the official description of graduate PM matches from configured sources and excludes roles whose minimum qualifications explicitly require a master's degree.
 - Treats non-senior Growth Product Manager titles at Anthropic and OpenAI as eligible even when they are not labeled as internships or graduate roles; preferred experience language does not suppress them.
@@ -108,7 +110,7 @@ Your computer must remain awake and connected. For genuine 24/7 coverage, run th
 
 Cloudflare dispatches the included `.github/workflows/monitor.yml` every five minutes, while GitHub's own schedule provides an hourly backup. The repository may be public, but `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` must be stored as encrypted repository secrets under **Settings → Secrets and variables → Actions**. Never commit `.env`.
 
-The workflow restores and saves the SQLite notification history through the Actions cache. Its first run establishes a silent baseline, then later runs alert only for newly discovered roles. Public-repository scheduled workflows may be disabled after 60 days without repository activity and should be checked periodically.
+The workflow restores and saves the SQLite notification history through the Actions cache. Existing notification history is restored before every check. If history is missing, current matches are sent so a lost cache cannot silently suppress opportunities. Public-repository scheduled workflows may be disabled after 60 days without repository activity and should be checked periodically.
 
 ## Useful commands
 

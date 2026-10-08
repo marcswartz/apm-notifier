@@ -32,6 +32,7 @@ BLOCK_MARKERS = (
     "attention required! | cloudflare",
     "please enable javascript and cookies to continue",
     "request unsuccessful. incapsula incident id",
+    "<title>just a moment",
 )
 
 

@@ -5,12 +5,14 @@ from dataclasses import dataclass
 from collections.abc import Iterator
 import logging
 import json
+import re
 import time
 
-from .extract import extract_jobs, response_has_job_signal
+from .extract import CareerHTMLParser, LinkedInJobCardParser, extract_jobs, response_has_job_signal
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from .fetch import BrowserRenderer, HttpClient
 from .filtering import RoleFilter
-from .models import FetchResult, Job, Source, SourceResult, normalize_space
+from .models import FetchResult, Job, Source, SourceResult, canonical_url, normalize_space
 from .notify import NotificationManager
 from .state import StateStore
 
@@ -75,12 +77,12 @@ class Monitor:
             for job in result.jobs:
                 role_key = (
                     normalize_space(job.company).casefold(),
-                    normalize_space(job.title).casefold(),
+                    canonical_url(job.url),
                 )
                 current = jobs_by_role.get(role_key)
                 if current is None or (
-                    current.source_id == "summer-2027-community-backcheck"
-                    and job.source_id != "summer-2027-community-backcheck"
+                    current.source_id.endswith("backcheck")
+                    and not job.source_id.endswith("backcheck")
                 ):
                     jobs_by_role[role_key] = job
         jobs = tuple(jobs_by_role.values())
@@ -186,6 +188,7 @@ class Monitor:
         body = source.request_bodies[index] if source.request_bodies else ""
         previous_pages: set[str] = set()
         total: int | None = None
+        page_url = url
         for _ in range(50):
             if source.render:
                 if source.request_method != "GET" or body or source.paginate:
@@ -193,13 +196,67 @@ class Monitor:
                 response = self.browser.fetch(url)
             else:
                 response = self.client.fetch(
-                    url, source.headers, method=source.request_method, body=body,
+                    page_url, source.headers, method=source.request_method, body=body,
                 )
+            if source.paginate and "linkedin.com/jobs-guest/" in url:
+                cards = LinkedInJobCardParser()
+                cards.feed(response.text)
+                if not cards.cards:
+                    empty_fragment = re.sub(r"<!DOCTYPE html>|<!--.*?-->", "", response.text, flags=re.IGNORECASE | re.DOTALL)
+                    if not empty_fragment.strip():
+                        return
+                    if not response_has_job_signal(response.text, response.content_type):
+                        raise ValueError(f"{page_url}: LinkedIn returned an unreadable search page")
+                    return
+                page_key = json.dumps(cards.cards)
+                if page_key in previous_pages:
+                    raise ValueError(f"{page_url}: pagination repeated a page before completion")
+                previous_pages.add(page_key)
+                yield response
+                parts = urlsplit(page_url)
+                query = dict(parse_qsl(parts.query))
+                query["start"] = str(int(query.get("start", "0")) + len(cards.cards))
+                page_url = urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query), ""))
+                continue
+            if source.paginate and "disneycareers.com" in urlsplit(url).netloc and "json" in response.content_type:
+                payload = json.loads(response.text)
+                html = payload.get("results")
+                if not isinstance(html, str) or not response_has_job_signal(html, "text/html"):
+                    raise ValueError(f"{page_url}: Disney returned unreadable job results")
+                yield FetchResult(response.requested_url, response.final_url, "text/html", html)
+                current = re.search(r'data-current-page="(\d+)"', html)
+                total_pages = re.search(r'data-total-pages="(\d+)"', html)
+                if not current or not total_pages:
+                    raise ValueError(f"{page_url}: Disney omitted pagination metadata")
+                page = int(current.group(1))
+                if page >= int(total_pages.group(1)):
+                    return
+                if str(page) in previous_pages:
+                    raise ValueError(f"{page_url}: pagination repeated a page before completion")
+                previous_pages.add(str(page))
+                parts = urlsplit(page_url)
+                query = dict(parse_qsl(parts.query))
+                query["CurrentPage"] = str(page + 1)
+                page_url = urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query), ""))
+                continue
             if not response_has_job_signal(response.text, response.content_type):
                 raise ValueError(f"{url}: response contained no job records or explicit zero-result state")
             if not source.paginate:
                 yield response
                 return
+            if source.request_method == "GET" and "json" not in response.content_type.casefold():
+                if page_url in previous_pages:
+                    raise ValueError(f"{page_url}: pagination repeated a page before completion")
+                previous_pages.add(page_url)
+                yield response
+                parser = CareerHTMLParser()
+                parser.feed(response.text)
+                next_link = next((href for href, label in parser.anchors if label.casefold() in {"next", "next page"}), None)
+                if not next_link:
+                    return
+                from urllib.parse import urljoin
+                page_url = urljoin(response.final_url, next_link)
+                continue
             request_body = json.loads(body)
             payload = json.loads(response.text)
             rows = payload.get("jobPostings")
