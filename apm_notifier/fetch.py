@@ -61,6 +61,8 @@ class HttpClient:
         self.timeout_seconds = timeout_seconds
         self.attempts = attempts
         self.ssl_context = trusted_ssl_context()
+        self._linkedin_lock = threading.Lock()
+        self._linkedin_next_request = 0.0
 
     def fetch(
         self,
@@ -75,6 +77,7 @@ class HttpClient:
         last_error: Exception | None = None
         for attempt in range(self.attempts):
             try:
+                self._pace_linkedin(url)
                 request = Request(url, data=encoded_body, headers=headers, method=method)
                 with self._open_request(request) as response:
                     response_body = response.read()
@@ -115,6 +118,17 @@ class HttpClient:
                     time.sleep(1.5 * (attempt + 1) + random.random() / 4)
         detail = str(last_error) if last_error else "unknown fetch error"
         raise FetchError(f"{url}: {detail}") from last_error
+
+    def _pace_linkedin(self, url: str) -> None:
+        """Share one request budget across employer feeds and retries."""
+        host = urlsplit(url).hostname or ""
+        if host != "linkedin.com" and not host.endswith(".linkedin.com"):
+            return
+        with self._linkedin_lock:
+            delay = self._linkedin_next_request - time.monotonic()
+            if delay > 0:
+                time.sleep(delay)
+            self._linkedin_next_request = time.monotonic() + 3.0
 
     def _open_request(self, request: Request):
         """Dayforce's anonymous search needs its normal CSRF token and session cookie."""

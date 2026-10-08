@@ -8,6 +8,14 @@ from urllib.request import Request
 
 
 class BrowserRendererTests(unittest.TestCase):
+    def test_linkedin_employer_feeds_share_a_request_budget(self) -> None:
+        client = HttpClient(5)
+        with patch("apm_notifier.fetch.time.monotonic", side_effect=(100, 100, 101, 103)), patch("apm_notifier.fetch.time.sleep") as sleep:
+            client._pace_linkedin("https://www.linkedin.com/jobs-guest/search?f_C=1")
+            client._pace_linkedin("https://uk.linkedin.com/jobs-guest/search?f_C=2")
+            client._pace_linkedin("https://jobs.example.com/jobs")
+        sleep.assert_called_once_with(2.0)
+
     def test_dayforce_search_bootstraps_anonymous_csrf_session(self) -> None:
         opener = MagicMock()
         opener.open.return_value.__enter__.return_value = io.BytesIO(b'{"csrfToken":"public-test-token"}')
