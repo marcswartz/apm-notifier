@@ -12,13 +12,19 @@ EXPLICIT_EARLY_CAREER = re.compile(
     re.IGNORECASE,
 )
 GRADUATE_PRODUCT_MANAGER = re.compile(
-    r"(?:\bproduct\s+manager\b.{0,100}\bgraduate\b|"
-    r"\bgraduate\b.{0,100}\bproduct\s+manager\b)",
+    r"(?:\bproduct\s+manager\b.{0,100}\b(?:graduate|new[ -]grad)\b|"
+    r"\b(?:graduate|new[ -]grad)\b.{0,100}\bproduct\s+manager\b)",
     re.IGNORECASE,
 )
 PRODUCT_ROLE = re.compile(
     r"\b(?:product\s+management|product\s+manager|technical\s+product\s+manager|"
     r"growth\s+product\s+manager|product\s+marketing(?:\s+manager)?)\b",
+    re.IGNORECASE,
+)
+PRODUCT_SPECIALIST = re.compile(
+    r"(?:\b(?:specialist|analyst|coordinator)\b(?:\W+\w+){0,3}\W+product\s+(?:management|manager)\b|"
+    r"\bproduct\s+(?:management|manager)\b(?:\W+\w+){0,3}\W+(?:specialist|analyst|coordinator)\b|"
+    r"\bproduct\s+specialist\b)",
     re.IGNORECASE,
 )
 GROWTH_PRODUCT_MANAGER = re.compile(
@@ -42,7 +48,7 @@ PRODUCT_DEVELOPMENT_PROGRAM = re.compile(
     re.IGNORECASE,
 )
 NEGATIVE_SENIORITY = re.compile(
-    r"\b(?:senior|sr\.?|staff|principal|director|head|vice president|vp)\b",
+    r"\b(?:senior|sr\.?|staff|principal|director|head|lead|vice president|vp)\b",
     re.IGNORECASE,
 )
 NON_SUMMER_TERM = re.compile(r"\b(?:fall|autumn|winter|spring)\b", re.IGNORECASE)
@@ -235,6 +241,7 @@ class RoleFilter:
         title: str,
         include_adjacent_marketing: bool = False,
         include_growth_product_roles: bool = False,
+        include_product_specialists: bool = False,
     ) -> bool:
         candidate = normalize_space(title)
         if len(candidate) < 5 or len(candidate) > 220:
@@ -262,12 +269,14 @@ class RoleFilter:
         growth_product_role = bool(
             include_growth_product_roles and GROWTH_PRODUCT_MANAGER.search(candidate)
         )
+        product_specialist = bool(include_product_specialists and PRODUCT_SPECIALIST.search(candidate))
         if (
             not early_career
             and not internship
             and not adjacent_marketing
             and not product_development_program
             and not growth_product_role
+            and not product_specialist
         ):
             return False
 

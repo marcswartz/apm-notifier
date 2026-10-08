@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import http.cookiejar
 from http.client import IncompleteRead
 from pathlib import Path
 import random
@@ -11,7 +12,8 @@ import subprocess
 import threading
 import time
 from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
+from urllib.request import HTTPCookieProcessor, HTTPSHandler, Request, build_opener, urlopen
+from urllib.parse import urlsplit
 
 from .models import FetchResult
 
@@ -73,7 +75,7 @@ class HttpClient:
         for attempt in range(self.attempts):
             try:
                 request = Request(url, data=encoded_body, headers=headers, method=method)
-                with urlopen(request, timeout=self.timeout_seconds, context=self.ssl_context) as response:
+                with self._open_request(request) as response:
                     response_body = response.read()
                     content_type = response.headers.get("Content-Type", "")
                     charset = response.headers.get_content_charset() or "utf-8"
@@ -112,6 +114,29 @@ class HttpClient:
                     time.sleep(1.5 * (attempt + 1) + random.random() / 4)
         detail = str(last_error) if last_error else "unknown fetch error"
         raise FetchError(f"{url}: {detail}") from last_error
+
+    def _open_request(self, request: Request):
+        """Dayforce's anonymous search needs its normal CSRF token and session cookie."""
+        parts = urlsplit(request.full_url)
+        if (
+            parts.hostname == "jobs.dayforcehcm.com"
+            and parts.path.startswith("/api/geo/")
+            and request.get_method() == "POST"
+        ):
+            opener = build_opener(
+                HTTPSHandler(context=self.ssl_context),
+                HTTPCookieProcessor(http.cookiejar.CookieJar()),
+            )
+            with opener.open(
+                Request("https://jobs.dayforcehcm.com/api/auth/csrf", headers=DEFAULT_HEADERS),
+                timeout=self.timeout_seconds,
+            ) as response:
+                token = json.load(response).get("csrfToken")
+            if not isinstance(token, str) or not token:
+                raise FetchError("Dayforce did not provide an anonymous search token")
+            request.add_header("X-CSRF-TOKEN", token)
+            return opener.open(request, timeout=self.timeout_seconds)
+        return urlopen(request, timeout=self.timeout_seconds, context=self.ssl_context)
 
     def url_exists(self, url: str) -> bool:
         """Reject confirmed dead links while treating transient verification failures as live."""

@@ -2,6 +2,65 @@
   "source_note": "Seeded from Extern's Summer 2027 PM guide, expanded with additional requested companies, and pointed at official company search/career pages.",
   "sources": [
     {
+      "id": "figma",
+      "name": "Figma",
+      "career_url": "https://www.figma.com/careers/early-career/",
+      "urls": [
+        "https://boards-api.greenhouse.io/v1/boards/figma/jobs"
+      ]
+    },
+    {
+      "id": "questrade",
+      "name": "Questrade",
+      "career_url": "https://jobs.dayforcehcm.com/en-US/qfg/CANDIDATEPORTAL",
+      "urls": [
+        "https://jobs.dayforcehcm.com/api/geo/qfg/jobposting/search"
+      ],
+      "request_method": "POST",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "url_template": "https://jobs.dayforcehcm.com/en-US/qfg/CANDIDATEPORTAL/jobs/{id}",
+      "paginate": true,
+      "request_bodies": [
+        {
+          "clientNamespace": "qfg",
+          "jobBoardCode": "CANDIDATEPORTAL",
+          "cultureCode": "en-US",
+          "searchText": "product",
+          "paginationStart": 0,
+          "distanceUnit": 0
+        }
+      ]
+    },
+    {
+      "id": "mastercard-product",
+      "name": "Mastercard",
+      "career_url": "https://careers.mastercard.com/us/en/",
+      "include_product_specialists": true,
+      "paginate": true,
+      "request_method": "POST",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "url_template": "https://mastercard.wd1.myworkdayjobs.com/CorporateCareers/{path}",
+      "urls": [
+        "https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/jobs"
+      ],
+      "request_bodies": [
+        {
+          "appliedFacets": {
+            "jobFamilyGroup": [
+              "2008c8ccf9ae4e56b7d0ea7b3d319a98"
+            ]
+          },
+          "limit": 20,
+          "offset": 0,
+          "searchText": ""
+        }
+      ]
+    },
+    {
       "id": "google",
       "name": "Google",
       "career_url": "https://www.google.com/about/careers/applications/programs/apm/",

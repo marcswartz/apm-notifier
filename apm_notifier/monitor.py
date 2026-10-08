@@ -2,13 +2,15 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
+from collections.abc import Iterator
 import logging
+import json
 import time
 
 from .extract import extract_jobs, response_has_job_signal
 from .fetch import BrowserRenderer, HttpClient
 from .filtering import RoleFilter
-from .models import Job, Source, SourceResult, normalize_space
+from .models import FetchResult, Job, Source, SourceResult, normalize_space
 from .notify import NotificationManager
 from .state import StateStore
 
@@ -146,44 +148,31 @@ class Monitor:
         fetched = 0
         for index, url in enumerate(source.urls):
             try:
-                body = source.request_bodies[index] if source.request_bodies else ""
-                if source.render:
-                    if source.request_method != "GET" or body:
-                        raise ValueError("Rendered sources only support GET requests")
-                    response = self.browser.fetch(url)
-                else:
-                    response = self.client.fetch(
-                        url,
-                        source.headers,
-                        method=source.request_method,
-                        body=body,
-                    )
-                if not response_has_job_signal(response.text, response.content_type):
-                    raise ValueError(f"{url}: response contained no job records or explicit zero-result state")
-                fetched += 1
-                for job in extract_jobs(
-                    response.text,
-                    response.content_type,
-                    source,
-                    response.final_url,
-                    self.role_filter,
-                ):
-                    if source.verify_job_links and not self.client.url_exists(job.url):
-                        LOGGER.warning("Skipping confirmed dead back-check link: %s", job.url)
-                        continue
-                    if (
-                        source.verify_graduate_education
-                        and self.role_filter.is_graduate_product_manager(job.title)
+                for response in self._source_responses(source, index, url):
+                    for job in extract_jobs(
+                        response.text,
+                        response.content_type,
+                        source,
+                        response.final_url,
+                        self.role_filter,
                     ):
-                        detail = self.client.fetch(job.url)
-                        if not self.role_filter.allows_bachelors(detail.text):
-                            LOGGER.info(
-                                "Skipping master's-only graduate role: %s — %s",
-                                source.name,
-                                job.title,
-                            )
+                        if source.verify_job_links and not self.client.url_exists(job.url):
+                            LOGGER.warning("Skipping confirmed dead back-check link: %s", job.url)
                             continue
-                    jobs[job.fingerprint] = job
+                        if (
+                            source.verify_graduate_education
+                            and self.role_filter.is_graduate_product_manager(job.title)
+                        ):
+                            detail = self.client.fetch(job.url)
+                            if not self.role_filter.allows_bachelors(detail.text):
+                                LOGGER.info(
+                                    "Skipping master's-only graduate role: %s — %s",
+                                    source.name,
+                                    job.title,
+                                )
+                                continue
+                        jobs[job.fingerprint] = job
+                fetched += 1
             except Exception as error:
                 errors.append(str(error))
         return SourceResult(
@@ -192,6 +181,50 @@ class Monitor:
             fetched_urls=fetched,
             errors=tuple(errors),
         )
+
+    def _source_responses(self, source: Source, index: int, url: str) -> Iterator[FetchResult]:
+        body = source.request_bodies[index] if source.request_bodies else ""
+        previous_pages: set[str] = set()
+        total: int | None = None
+        for _ in range(50):
+            if source.render:
+                if source.request_method != "GET" or body or source.paginate:
+                    raise ValueError("Rendered sources only support unpaginated GET requests")
+                response = self.browser.fetch(url)
+            else:
+                response = self.client.fetch(
+                    url, source.headers, method=source.request_method, body=body,
+                )
+            if not response_has_job_signal(response.text, response.content_type):
+                raise ValueError(f"{url}: response contained no job records or explicit zero-result state")
+            if not source.paginate:
+                yield response
+                return
+            request_body = json.loads(body)
+            payload = json.loads(response.text)
+            rows = payload.get("jobPostings")
+            reported_total = payload.get("total", payload.get("maxCount"))
+            if not isinstance(rows, list) or not isinstance(reported_total, int) or reported_total < 0:
+                raise ValueError(f"{url}: invalid paginated job response")
+            # Workday reports total=0 on later pages even while returning jobs.
+            if total is None:
+                total = reported_total
+                if rows and total < len(rows):
+                    raise ValueError(f"{url}: invalid first-page job count")
+            offset_key = "paginationStart" if "paginationStart" in request_body else "offset"
+            offset = request_body.get(offset_key, 0)
+            if not rows and offset < total:
+                raise ValueError(f"{url}: empty page before all {total} jobs were scanned")
+            page_key = json.dumps(rows, sort_keys=True)
+            if rows and page_key in previous_pages:
+                raise ValueError(f"{url}: pagination repeated a page before completion")
+            previous_pages.add(page_key)
+            yield response
+            if offset + len(rows) >= total:
+                return
+            request_body[offset_key] = offset + len(rows)
+            body = json.dumps(request_body)
+        raise ValueError(f"{url}: pagination exceeded 50 pages; scan incomplete")
 
     @staticmethod
     def _print_dry_run(jobs: tuple[Job, ...]) -> None:

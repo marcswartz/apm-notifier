@@ -49,6 +49,7 @@ LOCATION_KEYS = (
     "city",
     "categories",
     "PrimaryLocation",
+    "postingLocations",
 )
 MICROSOFT_RENDERED_JOB = re.compile(
     r"^(?P<title>.+?)\s+(?P<location>(?:United States|Canada|United Kingdom),.+?)"
@@ -156,6 +157,7 @@ def _matches_title(role_filter: RoleFilter, title: str, source: Source) -> bool:
         title,
         include_adjacent_marketing=source.include_adjacent_marketing,
         include_growth_product_roles=source.include_growth_product_roles,
+        include_product_specialists=source.include_product_specialists,
     )
 
 
@@ -170,7 +172,7 @@ def _jobs_from_json(
         title = _first_string(item, TITLE_KEYS)
         if not _matches_title(role_filter, title, source):
             continue
-        identifier = _first_string(item, ("id", "Id", "jobId", "job_id", "requisitionId"))
+        identifier = _first_string(item, ("id", "Id", "jobId", "job_id", "requisitionId", "jobPostingId"))
         raw_url = _first_string(item, URL_KEYS)
         if source.url_template and (identifier or raw_url):
             url = source.url_template.format(id=identifier, path=raw_url.lstrip("/"))

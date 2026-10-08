@@ -19,6 +19,9 @@ class RoleFilterTests(unittest.TestCase):
             "Product Development Internship Program (Summer 2027)",
             "Creative Product Manager Graduate (Creative and Brand Innovation) - 2027 Start",
             "Graduate Product Manager — 2027 Start",
+            "Product Manager: New Grad Accelerator",
+            "Product Manager, New Grad (2027 Start)",
+            "Early Career, Associate Product Manager (2027)",
         )
         for title in accepted:
             with self.subTest(title=title):
@@ -27,6 +30,8 @@ class RoleFilterTests(unittest.TestCase):
     def test_rejects_unrelated_or_old_roles(self) -> None:
         rejected = (
             "Senior Product Manager",
+            "Senior Product Manager: New Grad Accelerator",
+            "Product Manager: New Grad Accelerator 2026",
             "Product Marketing Manager",
             "Software Engineering Intern",
             "Associate Project Manager",
@@ -57,6 +62,15 @@ class RoleFilterTests(unittest.TestCase):
                 include_growth_product_roles=True,
             )
         )
+
+    def test_product_specialists_require_opt_in_and_exclude_senior_roles(self) -> None:
+        for title in ("Specialist, Global Product Management", "Product Management Analyst", "Product Specialist"):
+            with self.subTest(title=title):
+                self.assertFalse(self.filter.matches(title))
+                self.assertTrue(self.filter.matches(title, include_product_specialists=True))
+        for title in ("Senior Specialist, Global Product Management", "Lead Product Specialist", "Sales Specialist", "Product Manager"):
+            with self.subTest(title=title):
+                self.assertFalse(self.filter.matches(title, include_product_specialists=True))
 
     def test_adjacent_marketing_is_opt_in_and_limited_to_early_career(self) -> None:
         accepted = (

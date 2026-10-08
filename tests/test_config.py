@@ -74,7 +74,12 @@ class SaveEnvironmentTests(unittest.TestCase):
         self.assertNotIn("adidas-canada", by_id)
         self.assertTrue(by_id["anthropic"].include_growth_product_roles)
         self.assertTrue(by_id["openai"].include_growth_product_roles)
-        self.assertEqual(len(sources), 48)
+        self.assertIn("figma", by_id)
+        self.assertIn("questrade", by_id)
+        self.assertTrue(by_id["mastercard-product"].include_product_specialists)
+        self.assertTrue(by_id["mastercard-product"].paginate)
+        self.assertTrue(by_id["questrade"].paginate)
+        self.assertEqual(len(sources), 51)
 
 
 if __name__ == "__main__":

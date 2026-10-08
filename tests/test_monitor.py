@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 import tempfile
 import unittest
 
@@ -60,6 +61,30 @@ class GraduateClient:
 
 
 class MonitorTests(unittest.TestCase):
+    def test_scans_later_pages_and_rejects_repeated_pages(self) -> None:
+        for offset_key, total_key in (("offset", "total"), ("paginationStart", "maxCount")):
+            for repeated in (False, True):
+                with self.subTest(offset_key=offset_key, repeated=repeated):
+                    source = Source(
+                        id="example", name="Example", urls=("https://jobs.example.com/api",),
+                        career_url="https://jobs.example.com", request_method="POST", paginate=True,
+                        request_bodies=(json.dumps({offset_key: 0, "limit": 1}),),
+                    )
+                    class PagedClient:
+                        timeout_seconds = 5
+                        def fetch(self, url, extra_headers=None, method="GET", body=""):
+                            offset = json.loads(body)[offset_key]
+                            title = "Senior Product Manager" if offset < 2 or repeated else "Product Manager: New Grad Accelerator"
+                            reported_total = 0 if total_key == "total" and offset else 3
+                            payload = {total_key: reported_total, "jobPostings": [{"title": title, "url": "/jobs/1" if repeated else f"/jobs/{offset + 1}", "location": "New York"}]}
+                            return FetchResult(url, url, "application/json", json.dumps(payload))
+                    monitor = Monitor((source,), PagedClient(), RoleFilter(2027, (2026,)), None, None, 1, False)
+                    result = monitor._check_source(source)
+                    self.assertEqual(result.succeeded, not repeated)
+                    self.assertEqual(len(result.jobs), 0 if repeated else 1)
+                    if repeated:
+                        self.assertIn("repeated a page", result.errors[0])
+
     def test_partial_source_fetch_is_not_healthy(self) -> None:
         source = Source(
             id="example",

@@ -3,7 +3,8 @@
 APM Notifier watches official company career searches and sends a one-time phone alert when it finds a new:
 
 - Associate Product Manager or Rotational Product Manager role
-- Bachelor-eligible Graduate Product Manager role
+- Bachelor-eligible Graduate or New Grad Product Manager role
+- Non-senior Product Management specialist, analyst, and coordinator roles at Mastercard
 - Product Manager / Product Management internship or co-op
 - Technical or Growth Product Manager internship
 - Non-senior Growth Product Manager roles at Anthropic and OpenAI
@@ -11,11 +12,12 @@ APM Notifier watches official company career searches and sends a one-time phone
 - Summer marketing internships and junior marketing associate/analyst/specialist/coordinator roles
   at the requested companies
 
-The configuration monitors 48 company and job-network targets, including Google, Meta, Amazon, Microsoft, Apple, TikTok, Autodesk Canada-wide, Anthropic, Coinbase, DoorDash, Duolingo, Electronic Arts, Instacart, LinkedIn, Lyft, Reddit, Robinhood, Shopify, Snap, Spotify, Square/Block, Visa, Zynga, NVIDIA, Mastercard, Wealthsimple, OpenAI, Lime, Stripe, Uber, Airbnb, Adobe, and several others. Wellfound is present but disabled because its job pages require an interactive session. A separate US-wide [Summer 2027 community tracker](https://github.com/sndsh404/summer-2027-internships) is monitored as an independent back-check, so matching roles from companies outside that fixed list can also be detected. The original target list was seeded from the [Extern Summer 2027 PM guide](https://www.extern.com/post/product-management-internships-summer-2027-guide).
+The configuration monitors 51 career feeds and job-network targets, including Figma, Questrade, Google, Meta, Amazon, Microsoft, Apple, TikTok, Autodesk Canada-wide, Anthropic, Coinbase, DoorDash, Duolingo, Electronic Arts, Instacart, LinkedIn, Lyft, Reddit, Robinhood, Shopify, Snap, Spotify, Square/Block, Visa, Zynga, NVIDIA, Mastercard, Wealthsimple, OpenAI, Lime, Stripe, Uber, Airbnb, Adobe, and several others. Wellfound is present but disabled because its job pages require an interactive session. A separate US-wide [Summer 2027 community tracker](https://github.com/sndsh404/summer-2027-internships) is monitored as an independent back-check, so matching roles from companies outside that fixed list can also be detected. The original target list was seeded from the [Extern Summer 2027 PM guide](https://www.extern.com/post/product-management-internships-summer-2027-guide).
 
 ## What it does
 
 - Checks the configured career searches every five minutes by default.
+- Scans all result pages for Questrade and the Mastercard Product category, including anonymous Dayforce search sessions.
 - Accepts titles mentioning 2027 or no year and rejects explicitly older-year titles.
 - Rejects roles explicitly labeled fall, winter, spring, or autumn unless the title also says summer.
 - Only alerts for roles with a recognizable US, Canadian, or UK location. Ambiguous `Remote` or missing locations are excluded.

@@ -7,6 +7,21 @@ from apm_notifier.models import Source
 
 
 class ExtractJobsTests(unittest.TestCase):
+    def test_extracts_dayforce_posting_id_and_all_locations(self) -> None:
+        source = Source(
+            id="questrade", name="Questrade", urls=("https://jobs.dayforcehcm.com/api/geo/qfg/jobposting/search",),
+            career_url="https://jobs.dayforcehcm.com/en-US/qfg/CANDIDATEPORTAL",
+            url_template="https://jobs.dayforcehcm.com/en-US/qfg/CANDIDATEPORTAL/jobs/{id}",
+        )
+        payload = {"jobPostings": [{
+            "jobPostingId": 17940, "jobReqId": 4309, "jobTitle": "Associate Product Manager",
+            "postingLocations": [{"formattedAddress": "Toronto, ON, Canada"}, {"formattedAddress": "North York, ON, Canada"}],
+        }], "maxCount": 1}
+        jobs = extract_jobs(json.dumps(payload), "application/json", source, source.urls[0], RoleFilter(2027, (2026,)))
+        self.assertEqual(len(jobs), 1)
+        self.assertTrue(jobs[0].url.endswith("/jobs/17940"))
+        self.assertIn("North York", jobs[0].location)
+
     def setUp(self) -> None:
         self.source = Source(
             id="example",
