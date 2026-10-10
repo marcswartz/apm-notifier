@@ -171,6 +171,7 @@ def load_sources(path: Path) -> tuple[Source, ...]:
                 ),
                 include_product_specialists=bool(item.get("include_product_specialists", True)),
                 paginate=bool(item.get("paginate", False)),
+                priority=bool(item.get("priority", False)),
             )
         )
     return tuple(source for source in sources if source.enabled)

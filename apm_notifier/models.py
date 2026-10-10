@@ -60,6 +60,7 @@ class Source:
     include_growth_product_roles: bool = False
     include_product_specialists: bool = True
     paginate: bool = False
+    priority: bool = False
 
 
 @dataclass(frozen=True)
@@ -70,6 +71,11 @@ class Job:
     url: str
     location: str = ""
     discovered_at: str = field(default_factory=utc_now)
+    requirements: str = ""
+
+    @property
+    def role_key(self) -> tuple[str, str]:
+        return normalize_space(self.company).casefold(), canonical_url(self.url)
 
     @property
     def fingerprint(self) -> str:

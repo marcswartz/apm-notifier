@@ -3,13 +3,13 @@
 APM Notifier watches official company career searches and sends a one-time phone alert when it finds a new:
 
 - Associate, Rotational, Apprentice, Junior, Entry-Level, or Early-Career Product Manager / Product Owner / Product Builder roles
-- Bachelor-eligible Graduate or New Grad Product Manager role
+- Bachelor-eligible Graduate or New Grad Product Manager, Product Strategy, Product Operations, Product Solutions, and Product Marketing roles
 - Non-senior Product Management specialist, analyst, and coordinator roles across monitored companies
 - Product Manager / Product Management internship or co-op
 - Technical or Growth Product Manager internship
 - Non-senior Growth Product Manager roles at Anthropic and OpenAI
 - Product Marketing or Product Marketing Manager internship
-- Summer marketing internships and junior marketing associate/analyst/specialist/coordinator roles
+- Summer marketing internships and junior marketing associate/analyst/specialist/coordinator roles; graduate campaign, advertising, growth, and account roles
   at the requested companies
 
 The configuration monitors 53 career feeds and job-network targets, including Revolut, Figma, Questrade, Google, Meta, Amazon, Microsoft, Apple, TikTok, Autodesk Canada-wide, Anthropic, Coinbase, DoorDash, Duolingo, Electronic Arts, Instacart, LinkedIn, Lyft, Reddit, Robinhood, Shopify, Snap, Spotify, Square/Block, Visa, Zynga, NVIDIA, Mastercard, Wealthsimple, OpenAI, Lime, Stripe, Uber, Airbnb, Adobe, and several others. Wellfound is present but disabled because its job pages require an interactive session. A separate [new-grad community tracker](https://github.com/SimplifyJobs/New-Grad-Positions), with live employer-link verification, and the US-wide [Summer 2027 community tracker](https://github.com/sndsh404/summer-2027-internships) are monitored as independent back-checks, so matching roles from companies outside that fixed list can also be detected. The original target list was seeded from the [Extern Summer 2027 PM guide](https://www.extern.com/post/product-management-internships-summer-2027-guide).
@@ -18,18 +18,20 @@ The configuration monitors 53 career feeds and job-network targets, including Re
 
 - Checks the configured career searches every five minutes by default.
 - Scans every result page for configured Workday, Dayforce, LinkedIn, and Disney feeds; resolves anonymous Dayforce search sessions.
+- Scans TikTok's official public API across the entire campus feed plus an unrestricted graduate search, with all result pages and no upstream city or job-function exclusions. Local role, year, country, and education filters then select relevant openings.
+- Starts TikTok first and sends its new matches as soon as its scan finishes, without waiting for slower company feeds. Qualifications come directly from the API to avoid extra page fetches.
 - Uses employer-published LinkedIn feeds for Revolut, Uber, and HubSpot where direct feeds are blocked or retired.
 - Keeps distinct postings with the same title separate and reads all provided locations before filtering.
 - Accepts titles mentioning 2027 or no year and rejects explicitly older-year titles.
 - Rejects non-summer internships, while allowing full-time graduate cohorts that start in fall, winter, or spring.
 - Only alerts for roles with a recognizable US, Canadian, or UK location. Ambiguous `Remote` or missing locations are excluded.
-- Checks the official description of graduate PM matches from configured sources and excludes roles whose minimum qualifications explicitly require a master's degree.
+- Checks official qualifications for graduate matches from configured sources and excludes roles that explicitly require a master's, MBA, or PhD while retaining bachelor's-eligible alternatives.
 - Treats non-senior Growth Product Manager titles at Anthropic and OpenAI as eligible even when they are not labeled as internships or graduate roles; preferred experience language does not suppress them.
 - Stores a fingerprint for every match in SQLite, so a role alerts only once.
 - Retries temporary HTTP failures and checks sources concurrently.
 - Uses headless Chromium only for the few JavaScript-only searches; official JSON/HTML stays on the faster path.
 - Rejects empty JavaScript career shells instead of counting them as healthy job feeds.
-- Warns only after a source remains unavailable for six hours, then at most weekly during that outage.
+- Warns after TikTok cannot be fully checked for 15 minutes; other source warnings wait six hours. Repeated outage warnings remain limited to weekly.
 - Keeps undelivered roles pending if your phone notification provider is temporarily down.
 
 ## Quick start with Docker
@@ -109,6 +111,8 @@ Your computer must remain awake and connected. For genuine 24/7 coverage, run th
 ## Free cloud monitoring with GitHub Actions
 
 Cloudflare dispatches the included `.github/workflows/monitor.yml` every five minutes, while GitHub's own schedule provides an hourly backup. The repository may be public, but `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` must be stored as encrypted repository secrets under **Settings → Secrets and variables → Actions**. Never commit `.env`.
+
+The five-minute dispatch cadence is a target, not an instant-alert guarantee: runner queues, previous scans, provider rate limits, and the time before a job appears in TikTok's feed can delay detection. TikTok notifications no longer wait for the full multi-company scan once the job starts.
 
 The workflow restores and saves the SQLite notification history through the Actions cache. Existing notification history is restored before every check. If history is missing, current matches are sent so a lost cache cannot silently suppress opportunities. Public-repository scheduled workflows may be disabled after 60 days without repository activity and should be checked periodically.
 

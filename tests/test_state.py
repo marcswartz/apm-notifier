@@ -9,6 +9,38 @@ from apm_notifier.state import StateStore
 
 
 class StateStoreTests(unittest.TestCase):
+    def test_same_posting_with_changed_title_keeps_delivery_history(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            store = StateStore(Path(directory) / "state.sqlite3")
+            try:
+                original = Job("tiktok", "TikTok", "Product Manager Graduate - 2027 Start", "https://example.com/jobs/1")
+                variant = Job("community-backcheck", " TikTok ", "Product Manager Graduate", "https://example.com/jobs/1?utm_source=tracker", "London")
+                store.record_jobs((original,))
+                store.mark_notified(original)
+                store.record_jobs((variant,))
+                self.assertEqual(store.pending_jobs(), ())
+                self.assertEqual(store.job_counts(), (1, 0))
+            finally:
+                store.close()
+
+    def test_priority_health_alert_waits_fifteen_minutes_and_repeats_weekly(self) -> None:
+        source = Source("tiktok", "TikTok", ("https://example.com/jobs",), "https://example.com", priority=True)
+        failure = SourceResult(source, (), 0, ("unavailable",))
+        with tempfile.TemporaryDirectory() as directory:
+            store = StateStore(Path(directory) / "state.sqlite3")
+            try:
+                for when, expected in (
+                    ("2026-10-09T00:00:00+00:00", False),
+                    ("2026-10-09T00:14:59+00:00", False),
+                    ("2026-10-09T00:15:00+00:00", True),
+                    ("2026-10-09T00:30:00+00:00", False),
+                    ("2026-10-16T00:15:00+00:00", True),
+                ):
+                    with self.subTest(when=when), patch("apm_notifier.state.utc_now", return_value=when):
+                        self.assertEqual(store.record_source_result(failure), expected)
+            finally:
+                store.close()
+
     def test_deduplicates_and_preserves_pending_delivery(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             store = StateStore(Path(directory) / "state.sqlite3")

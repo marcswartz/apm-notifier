@@ -14,14 +14,19 @@ EXPLICIT_EARLY_CAREER = re.compile(
     r"\bproduct\s+(?:manager|owner)\s+I\b)",
     re.IGNORECASE,
 )
-GRADUATE_PRODUCT_MANAGER = re.compile(
-    r"(?:\bproduct\s+(?:manager|management|owner|builder)\b.{0,100}\b(?:graduate|new[ -]grad|new[ -]college[ -]grad)\b|"
-    r"\b(?:graduate|new[ -]grad|new[ -]college[ -]grad)\b.{0,100}\bproduct\s+(?:manager|management|owner|builder)\b)",
+GRADUATE_MARKER = re.compile(
+    r"\b(?:graduates?|new[ -]grads?|new[ -]college[ -]grads?)\b",
+    re.IGNORECASE,
+)
+EARLY_CAREER_MARKER = re.compile(
+    r"\b(?:associate|rotational|apprentice|apprenticeship|junior|trainee|"
+    r"entry[ -]level|early[ -]career)\b",
     re.IGNORECASE,
 )
 PRODUCT_ROLE = re.compile(
     r"\b(?:product\s+management|product\s+manager|technical\s+product\s+manager|"
-    r"growth\s+product\s+manager|product\s+owner|product\s+builder|product\s+marketing(?:\s+manager)?)\b",
+    r"growth\s+product\s+manager|product\s+owner|product\s+builder|product\s+marketing(?:\s+manager)?|"
+    r"product\s+(?:strategy|solutions?|operations?|growth))\b",
     re.IGNORECASE,
 )
 PRODUCT_SPECIALIST = re.compile(
@@ -35,14 +40,20 @@ GROWTH_PRODUCT_MANAGER = re.compile(
     r"\bproduct\s+manager\b.{0,60}\bgrowth\b)",
     re.IGNORECASE,
 )
-MARKETING_ROLE = re.compile(r"\bmarketing\b", re.IGNORECASE)
+MARKETING_ROLE = re.compile(r"\b(?:marketing|campaigns?|advertising|ads|growth)\b", re.IGNORECASE)
+GRADUATE_ACCOUNT_ROLE = re.compile(r"\baccount\s+(?:manager|management|strategist)\b", re.IGNORECASE)
 ENTRY_LEVEL_MARKETING = re.compile(
     r"(?:\b(?:associate|analyst|specialist|coordinator|graduate)\b(?:\W+\w+){0,3}\W+marketing\b|"
     r"\bmarketing\b(?:\W+\w+){0,3}\W+(?:associate|analyst|specialist|coordinator|graduate)\b)",
     re.IGNORECASE,
 )
 NON_ENTRY_ADJACENT_MARKETING = re.compile(
-    r"\bassociate\s+manager\b|\b(?:sourcing|procurement)\b",
+    r"\bassociate\s+manager\b|\bmanaging\s+consultant\b|\b(?:sourcing|procurement)\b",
+    re.IGNORECASE,
+)
+UNRELATED_JOB_FUNCTION = re.compile(
+    r"\b(?:engineer|developer|designer|scientist)\b|"
+    r"\b(?:engineering|design)\s+(?:(?:project|program)\s+)?(?:intern(?:ship)?|graduates?)\b",
     re.IGNORECASE,
 )
 INTERNSHIP = re.compile(r"\b(?:intern(?:ship)?|co[ -]?op)\b", re.IGNORECASE)
@@ -56,15 +67,23 @@ NEGATIVE_SENIORITY = re.compile(
 )
 NON_SUMMER_TERM = re.compile(r"\b(?:fall|autumn|winter|spring)\b", re.IGNORECASE)
 SUMMER_TERM = re.compile(r"\bsummer\b", re.IGNORECASE)
-MASTERS_REQUIRED = re.compile(
-    r"\b(?:completing|completed|pursuing|hold(?:ing)?|have)\b.{0,100}"
-    r"\bmaster(?:'s|s)?\s+degree\b|"
-    r"\bmaster(?:'s|s)?\s+degree\b.{0,80}\b(?:required|minimum|must)\b",
-    re.IGNORECASE | re.DOTALL,
+ADVANCED_DEGREE = re.compile(
+    r"\b(?:master(?:'s|s)(?:\s+degree)?|master\s+(?:degree|of\s+\w+)|mba|m\.?\s?sc\.?|"
+    r"m\.?\s?s\b(?!\.?\s+(?:office|excel|word|powerpoint|outlook|teams|access|project|"
+    r"sql|windows|azure|dynamics|power\s*bi)\b)\.?|"
+    r"ph\.?\s?d\.?|doctorate|doctoral\s+degree)\b",
+    re.IGNORECASE,
 )
 BACHELORS_ALLOWED = re.compile(
-    r"\b(?:bachelor(?:'s|s)?\s+degree|undergraduate|bachelor\s*/\s*master|bs\s*/\s*ms)\b",
+    r"\b(?:bachelor(?:'s|s)?|undergraduate|b\.?\s?s\.?|b\.?\s?a\.?|b\.?\s?sc\.?)\b",
     re.IGNORECASE,
+)
+EDUCATION_REQUIRED = re.compile(
+    r"\b(?:completing|completed|pursuing|enrolled|hold(?:ing)?|have|must|required?|minimum|essential)\b",
+    re.IGNORECASE,
+)
+EDUCATION_PREFERRED = re.compile(
+    r"\b(?:preferred|desirable|optional|nice\s+to\s+have|a\s+plus)\b", re.IGNORECASE
 )
 
 SUPPORTED_COUNTRIES = frozenset({"US", "CA", "UK"})
@@ -253,8 +272,21 @@ class RoleFilter:
         years = {int(value) for value in re.findall(r"\b20\d{2}\b", candidate)}
         if years & self.excluded_years and self.target_year not in years:
             return False
+        if UNRELATED_JOB_FUNCTION.search(candidate):
+            return False
+        graduate = bool(GRADUATE_MARKER.search(candidate))
         early_career = bool(
-            EXPLICIT_EARLY_CAREER.search(candidate) or GRADUATE_PRODUCT_MANAGER.search(candidate)
+            EXPLICIT_EARLY_CAREER.search(candidate)
+            or (
+                PRODUCT_ROLE.search(candidate)
+                and (
+                    graduate
+                    or (
+                        EARLY_CAREER_MARKER.search(candidate)
+                        and not NON_ENTRY_ADJACENT_MARKETING.search(candidate)
+                    )
+                )
+            )
         )
         internship = bool(INTERNSHIP.search(candidate) and PRODUCT_ROLE.search(candidate))
         # Seasonal limits apply to internships, not full-time graduate cohorts.
@@ -266,6 +298,11 @@ class RoleFilter:
             and (
                 (INTERNSHIP.search(candidate) and MARKETING_ROLE.search(candidate))
                 or ENTRY_LEVEL_MARKETING.search(candidate)
+                or (
+                    MARKETING_ROLE.search(candidate)
+                    and (graduate or EARLY_CAREER_MARKER.search(candidate))
+                )
+                or (graduate and GRADUATE_ACCOUNT_ROLE.search(candidate))
             )
         )
         product_development_program = bool(PRODUCT_DEVELOPMENT_PROGRAM.search(candidate))
@@ -289,20 +326,60 @@ class RoleFilter:
 
     @staticmethod
     def is_graduate_product_manager(title: str) -> bool:
-        return bool(GRADUATE_PRODUCT_MANAGER.search(normalize_space(title)))
+        candidate = re.sub(r"[\u2010-\u2015]", "-", normalize_space(title))
+        return bool(GRADUATE_MARKER.search(candidate) and PRODUCT_ROLE.search(candidate))
 
     @staticmethod
-    def allows_bachelors(detail_text: str) -> bool:
-        """Reject roles whose minimum qualifications explicitly require a master's degree."""
+    def is_graduate_role(title: str) -> bool:
+        candidate = re.sub(r"[\u2010-\u2015]", "-", normalize_space(title))
+        return bool(GRADUATE_MARKER.search(candidate) or ADVANCED_DEGREE.search(candidate))
+
+    @staticmethod
+    def allows_bachelors(detail_text: str, title: str = "") -> bool:
+        """Reject explicit postgraduate minimums while preserving bachelor alternatives."""
         readable = unescape(detail_text).replace("\\n", "\n").replace("\\'", "'")
-        lowered = readable.casefold()
-        start = lowered.find("minimum qualifications")
-        if start >= 0:
-            readable = readable[start : start + 8_000]
-            preferred = readable.casefold().find("preferred qualifications")
-            if preferred >= 0:
-                readable = readable[:preferred]
-        return not MASTERS_REQUIRED.search(readable) or bool(BACHELORS_ALLOWED.search(readable))
+        readable = readable.translate(str.maketrans({"\u2019": "'", "\u2018": "'", "\u02bc": "'"}))
+        normalized_title = title.translate(str.maketrans({"\u2019": "'", "\u2018": "'"}))
+        if (
+            ADVANCED_DEGREE.search(normalized_title)
+            and not BACHELORS_ALLOWED.search(normalized_title)
+            and not EDUCATION_PREFERRED.search(normalized_title)
+        ):
+            return False
+
+        # Keep list items and paragraphs separate so an unrelated bachelor's mention
+        # cannot override a later mandatory MBA/PhD qualification.
+        readable = re.sub(r"<\s*(?:br\b[^>]*|/?(?:li|p|div|h[1-6])\b[^>]*)>", "\n\n", readable, flags=re.IGNORECASE)
+        readable = re.sub(r"<[^>]+>", " ", readable)
+        readable = re.sub(r"\n\s*[-*\u2022]\s*", "\n\n", readable)
+        readable = re.sub(r"(?<!\n)\n(?!\n)", " ", readable)
+        start = re.search(r"\b(?:minimum|basic|required)\s+qualifications\b|\brequirements\b", readable, re.IGNORECASE)
+        within_minimums = start is not None
+        if start:
+            readable = readable[start.end() : start.end() + 8_000]
+        preferred = re.search(r"\bpreferred\s+qualifications\b|\bnice\s+to\s+have\b", readable, re.IGNORECASE)
+        if preferred:
+            readable = readable[: preferred.start()]
+        # Avoid treating abbreviation dots as sentence endings.
+        readable = re.sub(r"\b([BMP])\.\s*([ASHD])\.", r"\1\2", readable, flags=re.IGNORECASE)
+        readable = re.sub(r"\bPh\.\s?D\.", "PhD", readable, flags=re.IGNORECASE)
+        for clause in re.split(r"\n\s*\n|[;.!?]\s+", readable):
+            if not within_minimums and not EDUCATION_REQUIRED.search(clause):
+                continue
+            advanced_degrees = list(ADVANCED_DEGREE.finditer(clause))
+            for advanced_index, advanced in enumerate(advanced_degrees):
+                next_degree = advanced_degrees[advanced_index + 1].start() if advanced_index + 1 < len(advanced_degrees) else len(clause)
+                degree_context = clause[advanced.start() : next_degree]
+                if EDUCATION_PREFERRED.search(degree_context):
+                    continue
+                bachelor = BACHELORS_ALLOWED.search(clause)
+                if bachelor:
+                    between = clause[min(bachelor.end(), advanced.end()) : max(bachelor.start(), advanced.start())]
+                    # BS/MS and bachelor's or master's qualify; bachelor's AND MBA does not.
+                    if re.search(r"\bor\b|/", between, re.IGNORECASE) and not re.search(r"\band\b", between, re.IGNORECASE):
+                        continue
+                return False
+        return True
 
     def matches_location(self, location: str, title: str = "") -> bool:
         """Accept only roles with positive evidence of an allowed country."""

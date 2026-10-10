@@ -4,10 +4,11 @@ from datetime import datetime, timedelta
 from pathlib import Path
 import sqlite3
 
-from .models import Job, SourceResult, utc_now
+from .models import Job, SourceResult, canonical_url, normalize_space, utc_now
 
 
 HEALTH_ALERT_AFTER = timedelta(hours=6)
+PRIORITY_HEALTH_ALERT_AFTER = timedelta(minutes=15)
 HEALTH_ALERT_REPEAT = timedelta(days=7)
 
 
@@ -79,8 +80,21 @@ class StateStore:
 
     def record_jobs(self, jobs: tuple[Job, ...]) -> None:
         checked_at = utc_now()
+        known_roles = {
+            (normalize_space(row["company"]).casefold(), canonical_url(row["url"])): row["fingerprint"]
+            for row in self.connection.execute("SELECT fingerprint, company, url FROM jobs")
+        }
         with self.connection:
             for job in jobs:
+                # A direct feed and a back-check can describe one posting with
+                # different titles. Retain its stored identity and delivery state.
+                existing_fingerprint = known_roles.get(job.role_key)
+                if existing_fingerprint is not None:
+                    self.connection.execute(
+                        "UPDATE jobs SET last_seen_at = ?, location = ? WHERE fingerprint = ?",
+                        (checked_at, job.location, existing_fingerprint),
+                    )
+                    continue
                 self.connection.execute(
                     """
                     INSERT INTO jobs(
@@ -102,6 +116,7 @@ class StateStore:
                         checked_at,
                     ),
                 )
+                known_roles[job.role_key] = job.fingerprint
 
     def pending_jobs(self) -> tuple[Job, ...]:
         rows = self.connection.execute(
@@ -164,7 +179,11 @@ class StateStore:
 
         should_alert = (
             not result.succeeded
-            and self._outage_is_long_enough(failure_started_at, now)
+            and self._outage_is_long_enough(
+                failure_started_at,
+                now,
+                PRIORITY_HEALTH_ALERT_AFTER if result.source.priority else HEALTH_ALERT_AFTER,
+            )
             and self._alert_is_due(previous_alert, now)
         )
         alerted_at = now if should_alert else previous_alert
@@ -201,10 +220,12 @@ class StateStore:
         return should_alert
 
     @staticmethod
-    def _outage_is_long_enough(failure_started_at: str, now: str) -> bool:
+    def _outage_is_long_enough(
+        failure_started_at: str, now: str, threshold: timedelta = HEALTH_ALERT_AFTER,
+    ) -> bool:
         started = datetime.fromisoformat(failure_started_at)
         checked = datetime.fromisoformat(now)
-        return checked - started >= HEALTH_ALERT_AFTER
+        return checked - started >= threshold
 
     @staticmethod
     def _alert_is_due(previous_alert: str | None, now: str) -> bool:

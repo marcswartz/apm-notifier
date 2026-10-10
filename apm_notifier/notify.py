@@ -63,7 +63,7 @@ class NotificationManager:
 
     def send_job(self, job: Job) -> NotificationOutcome:
         telegram_text = (
-            "🚨 <b>New product role</b>\n\n"
+            "🚨 <b>New role</b>\n\n"
             f"<b>{escape(job.company)}</b>\n"
             f"{escape(job.title)}\n"
             + (f"📍 {escape(job.location)}\n" if job.location else "")
@@ -76,16 +76,17 @@ class NotificationManager:
 
     def send_health(self, result: SourceResult) -> NotificationOutcome:
         detail = _health_error_summary(result.errors)
+        duration = "15 minutes" if result.source.priority else "6 hours"
         telegram_text = (
             "⚠️ <b>APM Notifier coverage degraded</b>\n\n"
-            f"<b>{escape(result.source.name)}</b> has remained unavailable for at least 6 hours.\n"
-            "Monitoring and retries are continuing automatically. You do not need to do anything.\n\n"
+            f"<b>{escape(result.source.name)}</b> could not be fully checked for at least {duration}.\n"
+            "Retries are continuing automatically. Check the career page for new roles while coverage recovers.\n\n"
             f"Latest error: {escape(detail)}\n\n"
             f'<a href="{escape(result.source.career_url, quote=True)}">Open career page</a>'
         )
         plain_text = (
-            f"{result.source.name} has remained unavailable for at least 6 hours.\n"
-            "Monitoring continues automatically; no action is needed.\n"
+            f"{result.source.name} could not be fully checked for at least {duration}.\n"
+            "Retries continue automatically. Check the career page while coverage recovers.\n"
             f"Latest error: {detail}"
         )
         return self._send_all(

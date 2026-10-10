@@ -50,6 +50,7 @@ LOCATION_KEYS = (
     "categories",
     "PrimaryLocation",
     "postingLocations",
+    "city_info",
 )
 MICROSOFT_RENDERED_JOB = re.compile(
     r"^(?P<title>.+?)\s+(?P<location>(?:United States|Canada|United Kingdom),.+?)"
@@ -137,8 +138,10 @@ def _location_text(value: Any) -> str:
         if address is not None:
             return _location_text(address)
         components = [_first_string(value, (key,)) for key in (
-            "formattedAddress", "name", "location", "city", "addressLocality", "addressRegion", "addressCountry",
+            "formattedAddress", "name", "i18n_name", "en_name", "location", "city", "addressLocality", "addressRegion", "addressCountry",
         )]
+        if isinstance(value.get("parent"), dict):
+            components.append(_location_text(value["parent"]))
         return ", ".join(dict.fromkeys(part for part in components if part))
     return ""
 
@@ -191,6 +194,17 @@ def _jobs_from_json(
             office = re.search(r"/job/([^/]+)/", url)
             if office:
                 location = "; ".join(filter(None, (location, unquote(office.group(1)).replace("-", " "))))
+        # TikTok provides an authoritative country. Do not interpret the word
+        # "Wales" in Australia's "New South Wales" as a UK location.
+        city_info = item.get("city_info")
+        country = ""
+        while isinstance(city_info, dict):
+            if city_info.get("location_type") == 1:
+                country = _first_string(city_info, ("en_name", "i18n_name", "name"))
+                break
+            city_info = city_info.get("parent")
+        if country and not role_filter.matches_location(country):
+            continue
         if not role_filter.matches_location(location, title):
             continue
         jobs.append(
@@ -200,6 +214,7 @@ def _jobs_from_json(
                 title=title,
                 url=urljoin(base_url, url),
                 location=location,
+                requirements=item.get("requirement", "") if isinstance(item.get("requirement", ""), str) else "",
             )
         )
     return jobs

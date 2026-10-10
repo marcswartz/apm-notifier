@@ -12,9 +12,10 @@ from .extract import CareerHTMLParser, LinkedInJobCardParser, extract_jobs, resp
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from .fetch import BrowserRenderer, HttpClient
 from .filtering import RoleFilter
-from .models import FetchResult, Job, Source, SourceResult, canonical_url, normalize_space
+from .models import FetchResult, Job, Source, SourceResult
 from .notify import NotificationManager
 from .state import StateStore
+from .tiktok import normalize_search_response
 
 
 LOGGER = logging.getLogger("apm_notifier")
@@ -52,8 +53,12 @@ class Monitor:
     def run_once(self, dry_run: bool = False) -> RunSummary:
         LOGGER.info("Checking %d career sources", len(self.sources))
         results: list[SourceResult] = []
+        baseline_only = not dry_run and not self.store.is_initialized() and not self.alert_on_first_run
+        delivered = 0
+        attempted_alerts: set[str] = set()
         with ThreadPoolExecutor(max_workers=self.concurrency) as executor:
-            futures = {executor.submit(self._check_source, source): source for source in self.sources}
+            sources = sorted(self.sources, key=lambda source: not source.priority)
+            futures = {executor.submit(self._check_source, source): source for source in sources}
             for future in as_completed(futures):
                 source = futures[future]
                 try:
@@ -71,14 +76,20 @@ class Monitor:
                     len(source.urls),
                     f"; {'; '.join(result.errors)}" if result.errors else "",
                 )
+                if not dry_run:
+                    if self.store.record_source_result(result):
+                        outcome = self.notifier.send_health(result)
+                        if outcome.errors:
+                            LOGGER.error("Health alert failed: %s", "; ".join(outcome.errors))
+                    if source.priority:
+                        self.store.record_jobs(result.jobs)
+                        if not baseline_only:
+                            delivered += self._deliver_pending_jobs(attempted_alerts)
 
         jobs_by_role: dict[tuple[str, str], Job] = {}
         for result in results:
             for job in result.jobs:
-                role_key = (
-                    normalize_space(job.company).casefold(),
-                    canonical_url(job.url),
-                )
+                role_key = job.role_key
                 current = jobs_by_role.get(role_key)
                 if current is None or (
                     current.source_id.endswith("backcheck")
@@ -93,29 +104,14 @@ class Monitor:
             self._print_dry_run(jobs)
             return RunSummary(succeeded, failed, len(jobs), 0, len(jobs))
 
-        first_run = not self.store.is_initialized()
         self.store.record_jobs(jobs)
-        for result in results:
-            if self.store.record_source_result(result):
-                outcome = self.notifier.send_health(result)
-                if outcome.errors:
-                    LOGGER.error("Health alert failed: %s", "; ".join(outcome.errors))
-
-        if first_run and not self.alert_on_first_run:
+        if baseline_only:
             self.store.silence_pending()
         if succeeded:
             self.store.mark_initialized()
 
-        delivered = 0
         if self.notifier.configured_channels:
-            for job in self.store.pending_jobs():
-                outcome = self.notifier.send_job(job)
-                if outcome.delivered:
-                    self.store.mark_notified(job)
-                    delivered += 1
-                    LOGGER.info("Alert delivered: %s — %s", job.company, job.title)
-                if outcome.errors:
-                    LOGGER.error("Alert channel error for %s: %s", job.title, "; ".join(outcome.errors))
+            delivered += self._deliver_pending_jobs(attempted_alerts)
         else:
             LOGGER.warning(
                 "No phone notification channel is configured; matching jobs remain pending. "
@@ -133,6 +129,23 @@ class Monitor:
         )
         return RunSummary(succeeded, failed, len(jobs), delivered, pending)
 
+    def _deliver_pending_jobs(self, attempted: set[str]) -> int:
+        if not self.notifier.configured_channels:
+            return 0
+        delivered = 0
+        for job in self.store.pending_jobs():
+            if job.fingerprint in attempted:
+                continue
+            attempted.add(job.fingerprint)
+            outcome = self.notifier.send_job(job)
+            if outcome.delivered:
+                self.store.mark_notified(job)
+                delivered += 1
+                LOGGER.info("Alert delivered: %s — %s", job.company, job.title)
+            if outcome.errors:
+                LOGGER.error("Alert channel error for %s: %s", job.title, "; ".join(outcome.errors))
+        return delivered
+
     def run_forever(self, interval_seconds: int) -> None:
         LOGGER.info("Starting monitor loop; checking every %d seconds", interval_seconds)
         while True:
@@ -148,6 +161,7 @@ class Monitor:
         jobs: dict[str, Job] = {}
         errors: list[str] = []
         fetched = 0
+        education_checks: dict[str, bool] = {}
         for index, url in enumerate(source.urls):
             try:
                 for response in self._source_responses(source, index, url):
@@ -163,12 +177,16 @@ class Monitor:
                             continue
                         if (
                             source.verify_graduate_education
-                            and self.role_filter.is_graduate_product_manager(job.title)
+                            and self.role_filter.is_graduate_role(job.title)
                         ):
-                            detail = self.client.fetch(job.url)
-                            if not self.role_filter.allows_bachelors(detail.text):
+                            if job.fingerprint not in education_checks:
+                                detail_text = job.requirements or self.client.fetch(job.url).text
+                                education_checks[job.fingerprint] = self.role_filter.allows_bachelors(
+                                    detail_text, title=job.title,
+                                )
+                            if not education_checks[job.fingerprint]:
                                 LOGGER.info(
-                                    "Skipping master's-only graduate role: %s — %s",
+                                    "Skipping postgraduate-only role: %s — %s",
                                     source.name,
                                     job.title,
                                 )
@@ -198,6 +216,7 @@ class Monitor:
                 response = self.client.fetch(
                     page_url, source.headers, method=source.request_method, body=body,
                 )
+            response = normalize_search_response(response)
             if source.paginate and "linkedin.com/jobs-guest/" in url:
                 cards = LinkedInJobCardParser()
                 cards.feed(response.text)

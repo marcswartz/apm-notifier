@@ -7,6 +7,19 @@ from apm_notifier.config import load_sources, save_env_values
 
 
 class SaveEnvironmentTests(unittest.TestCase):
+    def test_loads_priority_source_option_and_defaults_off(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "sources.json"
+            path.write_text(
+                '{"sources":[{"id":"priority","name":"Priority",'
+                '"urls":["https://jobs.example.com"],"priority":true},'
+                '{"id":"regular","name":"Regular","urls":["https://jobs.example.com"]}]}',
+                encoding="utf-8",
+            )
+            priority, regular = load_sources(path)
+            self.assertTrue(priority.priority)
+            self.assertFalse(regular.priority)
+
     def test_creates_from_template_and_updates_selected_values(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
